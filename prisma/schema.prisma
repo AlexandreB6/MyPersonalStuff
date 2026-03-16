@@ -10,18 +10,29 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Peinture Citadel possédée par l'utilisateur
+model OwnedPaint {
+  id        Int      @id @default(autoincrement())
+  paintId   String   @unique /// Identifiant slug de la peinture (ex: "abaddon-black")
+  quantity  Int      @default(1)
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Film suivi dans la collection personnelle
 model Movie {
   id          Int       @id @default(autoincrement())
-  tmdbId      Int?      @unique
+  tmdbId      Int?      @unique /// Identifiant TMDB pour enrichir les métadonnées
   title       String
   posterPath  String?
   overview    String?
   director    String?
   releaseYear Int?
-  watchedAt   DateTime
-  rating      Int?
-  owned       Boolean   @default(false)
-  ownedFormat String?
+  watchedAt   DateTime /// Date à laquelle le film a été vu
+  rating      Int?     /// Note personnelle (1-5)
+  owned       Boolean   @default(false) /// Possède un exemplaire physique
+  ownedFormat String?  /// Format possédé (DVD, Blu-ray, etc.)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }

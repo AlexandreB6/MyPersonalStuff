@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read(*)",
+      "Write(*)",
+      "Edit(*)",
+      "Glob(*)",
+      "Grep(*)",
+      "Agent(*)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(npx prisma:*)",
+      "Bash(npm run:*)",
+      "Bash(taskkill:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:karanbansal.in)"
+    ]
+  }
+}

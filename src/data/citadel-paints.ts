@@ -1,0 +1,376 @@
+/**
+ * Catalogue des peintures Citadel (Games Workshop).
+ * Données statiques utilisées par l'inventaire de peintures.
+ */
+
+/** Types de peinture Citadel disponibles */
+export type PaintType =
+  | "Base"
+  | "Layer"
+  | "Shade"
+  | "Dry"
+  | "Contrast"
+  | "Technical";
+
+/** Familles de couleur dérivées depuis le code hex */
+export type ColorFamily =
+  | "Rouge"
+  | "Orange"
+  | "Jaune"
+  | "Vert"
+  | "Bleu"
+  | "Violet"
+  | "Rose"
+  | "Marron"
+  | "Gris"
+  | "Noir"
+  | "Blanc"
+  | "Beige";
+
+/** Structure d'une peinture Citadel */
+export interface CitadelPaint {
+  id: string;
+  name: string;
+  hex: string;
+  type: PaintType;
+  metallic?: boolean;
+}
+
+/** Génère un slug URL-safe depuis le nom de la peinture */
+function slug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+/** Raccourci pour créer une entrée CitadelPaint */
+function p(name: string, hex: string, type: PaintType, metallic?: boolean): CitadelPaint {
+  return { id: slug(name), name, hex, type, ...(metallic && { metallic }) };
+}
+
+/**
+ * Dérive la famille de couleur depuis un code hex.
+ * Utilise la teinte HSL et des heuristiques pour les cas limites
+ * (marron, beige, gris, noir, blanc).
+ */
+export function getColorFamily(hex: string): ColorFamily {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+  const lightness = (max + min) / 2 / 255;
+  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1)) / 255;
+
+  if (max <= 30) return "Noir";
+  if (min >= 230) return "Blanc";
+  if (saturation < 0.15 && lightness > 0.12 && lightness < 0.9) return "Gris";
+  if (saturation < 0.15 && lightness >= 0.9) return "Blanc";
+
+  let hue = 0;
+  if (delta > 0) {
+    if (max === r) hue = 60 * (((g - b) / delta) % 6);
+    else if (max === g) hue = 60 * ((b - r) / delta + 2);
+    else hue = 60 * ((r - g) / delta + 4);
+    if (hue < 0) hue += 360;
+  }
+
+  if (hue >= 0 && hue < 45 && lightness < 0.45 && saturation < 0.8) return "Marron";
+  if (hue >= 30 && hue < 55 && lightness > 0.55 && saturation < 0.6) return "Beige";
+
+  if (hue < 15 || hue >= 345) return "Rouge";
+  if (hue < 40) return "Orange";
+  if (hue < 65) return "Jaune";
+  if (hue < 170) return "Vert";
+  if (hue < 260) return "Bleu";
+  if (hue < 300) return "Violet";
+  return "Rose";
+}
+
+export const CITADEL_PAINTS: CitadelPaint[] = [
+  // ── Base ──────────────────────────────────────────────
+  p("Abaddon Black", "#000000", "Base"),
+  p("Averland Sunset", "#FBB81C", "Base"),
+  p("Barak-Nar Burgundy", "#451636", "Base"),
+  p("Bugman's Glow", "#804C43", "Base"),
+  p("Caledor Sky", "#366699", "Base"),
+  p("Caliban Green", "#003D15", "Base"),
+  p("Castellan Green", "#264715", "Base"),
+  p("Catachan Flesh", "#442B25", "Base"),
+  p("Celestra Grey", "#8BA3A3", "Base"),
+  p("Corax White", "#FFFFFF", "Base"),
+  p("Corvus Black", "#171314", "Base"),
+  p("Daemonette Hide", "#655F81", "Base"),
+  p("Death Guard Green", "#6D774D", "Base"),
+  p("Death Korps Drab", "#3D4539", "Base"),
+  p("Deathworld Forest", "#556229", "Base"),
+  p("Dryad Bark", "#2B2A24", "Base"),
+  p("Gal Vorbak Red", "#4B213C", "Base"),
+  p("Grey Seer", "#A2A5A7", "Base"),
+  p("Hobgrot Hide", "#A1812A", "Base"),
+  p("Incubi Darkness", "#082E32", "Base"),
+  p("Ionrach Skin", "#97A384", "Base"),
+  p("Jokaero Orange", "#ED3814", "Base"),
+  p("Kantor Blue", "#02134E", "Base"),
+  p("Khorne Red", "#650001", "Base"),
+  p("Leadbelcher", "#888D8F", "Base", true),
+  p("Lupercal Green", "#002C2B", "Base"),
+  p("Macragge Blue", "#0F3D7C", "Base"),
+  p("Mechanicus Standard Grey", "#39484A", "Base"),
+  p("Mephiston Red", "#960C09", "Base"),
+  p("Morghast Bone", "#C0A973", "Base"),
+  p("Mournfang Brown", "#490F06", "Base"),
+  p("Naggaroth Night", "#3B2B50", "Base"),
+  p("Night Lords Blue", "#002B5C", "Base"),
+  p("Nocturne Green", "#162A29", "Base"),
+  p("Orruk Flesh", "#8CC276", "Base"),
+  p("Phoenician Purple", "#440052", "Base"),
+  p("Rakarth Flesh", "#9C998D", "Base"),
+  p("Ratskin Flesh", "#A86648", "Base"),
+  p("Retributor Armour", "#C39E3A", "Base", true),
+  p("Rhinox Hide", "#462F30", "Base"),
+  p("Screamer Pink", "#7A0E44", "Base"),
+  p("Steel Legion Drab", "#584E2D", "Base"),
+  p("Stegadon Scale Green", "#06455D", "Base"),
+  p("The Fang", "#405B71", "Base"),
+  p("Thondia Brown", "#54302A", "Base"),
+  p("Thousand Sons Blue", "#00506F", "Base"),
+  p("Waaagh! Flesh", "#0B3B36", "Base"),
+  p("Warplock Bronze", "#654741", "Base", true),
+  p("Wraithbone", "#DBD1B2", "Base"),
+  p("XV-88", "#6C4811", "Base"),
+  p("Zandri Dust", "#988E56", "Base"),
+  p("Balthasar Gold", "#A47552", "Base", true),
+  p("Iron Hands Steel", "#414040", "Base", true),
+  p("Iron Warriors", "#5E5E5E", "Base", true),
+  p("Screaming Bell", "#C16F45", "Base", true),
+
+  // ── Layer ─────────────────────────────────────────────
+  p("Administratum Grey", "#989C94", "Layer"),
+  p("Ahriman Blue", "#00708A", "Layer"),
+  p("Alaitoc Blue", "#2F4F85", "Layer"),
+  p("Altdorf Guard Blue", "#2D4696", "Layer"),
+  p("Auric Armour Gold", "#C5953D", "Layer", true),
+  p("Baharroth Blue", "#54BDCA", "Layer"),
+  p("Balor Brown", "#875408", "Layer"),
+  p("Baneblade Brown", "#8F7C68", "Layer"),
+  p("Bestigor Flesh", "#D08951", "Layer"),
+  p("Bloodreaver Flesh", "#6A4848", "Layer"),
+  p("Blue Horror", "#9EB5CE", "Layer"),
+  p("Brass Scorpion", "#B87333", "Layer", true),
+  p("Cadian Fleshtone", "#C47652", "Layer"),
+  p("Calgar Blue", "#2A497F", "Layer"),
+  p("Canoptek Alloy", "#C0B080", "Layer", true),
+  p("Dark Reaper", "#354D4C", "Layer"),
+  p("Dawnstone", "#697068", "Layer"),
+  p("Deathclaw Brown", "#AF634F", "Layer"),
+  p("Dechala Lilac", "#B598C9", "Layer"),
+  p("Deepkin Flesh", "#A9B79F", "Layer"),
+  p("Doombull Brown", "#570003", "Layer"),
+  p("Dorn Yellow", "#FFF55A", "Layer"),
+  p("Elysian Green", "#6B8C37", "Layer"),
+  p("Emperor's Children", "#B74073", "Layer"),
+  p("Eshin Grey", "#484B4E", "Layer"),
+  p("Evil Sunz Scarlet", "#C01411", "Layer"),
+  p("Fenrisian Grey", "#6D94B3", "Layer"),
+  p("Fire Dragon Bright", "#F4874E", "Layer"),
+  p("Flash Gitz Yellow", "#FFF300", "Layer"),
+  p("Flayed One Flesh", "#EEC483", "Layer"),
+  p("Fulgurite Copper", "#D08050", "Layer", true),
+  p("Fulgrim Pink", "#F3ABCA", "Layer"),
+  p("Gauss Blaster Green", "#7FC1A5", "Layer"),
+  p("Gehenna's Gold", "#C2761B", "Layer", true),
+  p("Genestealer Purple", "#7658A5", "Layer"),
+  p("Gorthor Brown", "#5F463F", "Layer"),
+  p("Hashut Copper", "#B56033", "Layer", true),
+  p("Hoeth Blue", "#4C78AF", "Layer"),
+  p("Kabalite Green", "#008962", "Layer"),
+  p("Kakophoni Purple", "#8869AE", "Layer"),
+  p("Karak Stone", "#B7945C", "Layer"),
+  p("Kislev Flesh", "#D1A570", "Layer"),
+  p("Knight-Questor Flesh", "#996563", "Layer"),
+  p("Krieg Khaki", "#BCBB7E", "Layer"),
+  p("Liberator Gold", "#C19726", "Layer", true),
+  p("Loren Forest", "#486C25", "Layer"),
+  p("Lothern Blue", "#2C9BCC", "Layer"),
+  p("Lugganath Orange", "#F69B82", "Layer"),
+  p("Moot Green", "#3DAF44", "Layer"),
+  p("Nurgling Green", "#7E975E", "Layer"),
+  p("Ogryn Camo", "#96A648", "Layer"),
+  p("Pallid Wych Flesh", "#CACCBB", "Layer"),
+  p("Phalanx Yellow", "#FFE200", "Layer"),
+  p("Pink Horror", "#8E2757", "Layer"),
+  p("Runefang Steel", "#A5A5A5", "Layer", true),
+  p("Russ Grey", "#507085", "Layer"),
+  p("Screaming Skull", "#B9C099", "Layer"),
+  p("Skarsnik Green", "#588F6B", "Layer"),
+  p("Skavenblight Dinge", "#45413B", "Layer"),
+  p("Skrag Brown", "#8B4806", "Layer"),
+  p("Slaanesh Grey", "#8B8893", "Layer"),
+  p("Sons of Horus Green", "#00545E", "Layer"),
+  p("Sotek Green", "#0B6371", "Layer"),
+  p("Squig Orange", "#A74D42", "Layer"),
+  p("Stormhost Silver", "#C4C4C4", "Layer", true),
+  p("Stormvermin Fur", "#6D655F", "Layer"),
+  p("Straken Green", "#597F1C", "Layer"),
+  p("Sycorax Bronze", "#A8845D", "Layer", true),
+  p("Sybarite Green", "#17A166", "Layer"),
+  p("Tallarn Sand", "#A07409", "Layer"),
+  p("Tau Light Ochre", "#BC6B10", "Layer"),
+  p("Teclis Blue", "#3877BF", "Layer"),
+  p("Temple Guard Blue", "#239489", "Layer"),
+  p("Thunderhawk Blue", "#396A70", "Layer"),
+  p("Troll Slayer Orange", "#F16C23", "Layer"),
+  p("Tuskgor Fur", "#863231", "Layer"),
+  p("Ulthuan Grey", "#C4DDD5", "Layer"),
+  p("Ungor Flesh", "#D1A560", "Layer"),
+  p("Ushabti Bone", "#ABA173", "Layer"),
+  p("Vulkan Green", "#223C2E", "Layer"),
+  p("Warboss Green", "#317E57", "Layer"),
+  p("Warpfiend Grey", "#66656E", "Layer"),
+  p("Warpstone Glow", "#0F702A", "Layer"),
+  p("Wazdakka Red", "#880804", "Layer"),
+  p("White Scar", "#FFFFFF", "Layer"),
+  p("Wild Rider Red", "#E82E1B", "Layer"),
+  p("Word Bearers Red", "#620104", "Layer"),
+  p("Xereus Purple", "#47125A", "Layer"),
+  p("Yriel Yellow", "#FFD900", "Layer"),
+  p("Zamesi Desert", "#D89D1B", "Layer"),
+
+  // ── Shade ─────────────────────────────────────────────
+  p("Agrax Earthshade", "#35312C", "Shade"),
+  p("Biel-Tan Green", "#1B3A28", "Shade"),
+  p("Carroburg Crimson", "#A8455B", "Shade"),
+  p("Casandora Yellow", "#F4B800", "Shade"),
+  p("Coelia Greenshade", "#0E4243", "Shade"),
+  p("Drakenhof Nightshade", "#162F4E", "Shade"),
+  p("Druchii Violet", "#5C4669", "Shade"),
+  p("Fuegan Orange", "#C85A10", "Shade"),
+  p("Nuln Oil", "#14100E", "Shade"),
+  p("Reikland Fleshshade", "#CA6C4D", "Shade"),
+  p("Seraphin Sepia", "#D79E57", "Shade"),
+  p("Targor Rageshade", "#6B2149", "Shade"),
+
+  // ── Dry ───────────────────────────────────────────────
+  p("Astorath Red", "#BB2B15", "Dry"),
+  p("Changeling Pink", "#F1BFCD", "Dry"),
+  p("Dawnstone (Dry)", "#697068", "Dry"),
+  p("Etherium Blue", "#9EAEB7", "Dry"),
+  p("Eldar Flesh", "#CEAD83", "Dry"),
+  p("Golden Griffon", "#C99058", "Dry", true),
+  p("Hoeth Blue (Dry)", "#4C78AF", "Dry"),
+  p("Hexos Palesun", "#FFF45B", "Dry"),
+  p("Imrik Blue", "#1779C4", "Dry"),
+  p("Longbeard Grey", "#B8B0A2", "Dry"),
+  p("Lucius Lilac", "#B698C9", "Dry"),
+  p("Necron Compound", "#828382", "Dry", true),
+  p("Niblet Green", "#37825A", "Dry"),
+  p("Nurgling Green (Dry)", "#7E975E", "Dry"),
+  p("Praxeti White", "#FFFFFF", "Dry"),
+  p("Ryza Rust", "#E77C24", "Dry"),
+  p("Sigmarite", "#C49A40", "Dry", true),
+  p("Skink Blue", "#58ADC2", "Dry"),
+  p("Slaanesh Grey (Dry)", "#8B8893", "Dry"),
+  p("Stormfang", "#5A7FA0", "Dry"),
+  p("Sylvaneth Bark", "#44362D", "Dry"),
+  p("Terminatus Stone", "#BFB79E", "Dry"),
+  p("Tyrant Skull", "#C9C086", "Dry"),
+  p("Underhive Ash", "#C6B48A", "Dry"),
+  p("Wrack White", "#D2D0CC", "Dry"),
+
+  // ── Contrast ──────────────────────────────────────────
+  p("Aethermatic Blue", "#77B5C4", "Contrast"),
+  p("Aggaros Dunes", "#C89B3C", "Contrast"),
+  p("Akhelian Green", "#008F85", "Contrast"),
+  p("Apothecary White", "#C9D1D2", "Contrast"),
+  p("Basilicanum Grey", "#5D6159", "Contrast"),
+  p("Black Legion", "#1A1A1A", "Contrast"),
+  p("Black Templar", "#1A1A1A", "Contrast"),
+  p("Blood Angels Red", "#A41208", "Contrast"),
+  p("Briar Queen Chill", "#57A38E", "Contrast"),
+  p("Creed Camo", "#5A7E39", "Contrast"),
+  p("Cygor Brown", "#7B4B2D", "Contrast"),
+  p("Dark Angels Green", "#003C1F", "Contrast"),
+  p("Darkoath Flesh", "#B07658", "Contrast"),
+  p("Flesh Tearers Red", "#740004", "Contrast"),
+  p("Gore-Grunta Fur", "#743910", "Contrast"),
+  p("Gryph-Charger Grey", "#5D7A8A", "Contrast"),
+  p("Gryph-Hound Orange", "#D55C2C", "Contrast"),
+  p("Guilliman Flesh", "#C67E5A", "Contrast"),
+  p("Hexwraith Flame", "#00A14B", "Contrast"),
+  p("Iyanden Yellow", "#F0A820", "Contrast"),
+  p("Karandras Green", "#3C6830", "Contrast"),
+  p("Kroxigore Scales", "#005D5C", "Contrast"),
+  p("Leviadan Blue", "#003366", "Contrast"),
+  p("Luxion Purple", "#5A2D82", "Contrast"),
+  p("Magos Purple", "#8A5AAE", "Contrast"),
+  p("Militarum Green", "#747C3D", "Contrast"),
+  p("Nazdreg Yellow", "#E6A519", "Contrast"),
+  p("Ork Flesh", "#3B7A3E", "Contrast"),
+  p("Plaguebearer Flesh", "#B6C06B", "Contrast"),
+  p("Pylar Glacier", "#58B1CC", "Contrast"),
+  p("Ratling Grime", "#534301", "Contrast"),
+  p("Shyish Purple", "#5B3371", "Contrast"),
+  p("Skeleton Horde", "#C6B56A", "Contrast"),
+  p("Snakebite Leather", "#8B5B2B", "Contrast"),
+  p("Space Wolves Grey", "#6B8FA3", "Contrast"),
+  p("Stormfiend", "#6D8E3D", "Contrast"),
+  p("Striking Scorpion Green", "#00964B", "Contrast"),
+  p("Talassar Blue", "#006CAD", "Contrast"),
+  p("Terradon Turquoise", "#007871", "Contrast"),
+  p("Ultramarines Blue", "#2F4093", "Contrast"),
+  p("Volupus Pink", "#8B1D50", "Contrast"),
+  p("Warp Lightning", "#00843B", "Contrast"),
+  p("Wyldwood", "#5B3C24", "Contrast"),
+
+  // ── Technical ─────────────────────────────────────────
+  p("Ardcoat", "#EAEAEB", "Technical"),
+  p("Astrogranite", "#757679", "Technical"),
+  p("Astrogranite Debris", "#898A8E", "Technical"),
+  p("Blood for the Blood God", "#6D0001", "Technical"),
+  p("Contrast Medium", "#EAEAEA", "Technical"),
+  p("Lahmian Medium", "#F5F1E7", "Technical"),
+  p("Martian Ironearth", "#B04E1C", "Technical"),
+  p("Martian Ironcrust", "#C05C27", "Technical"),
+  p("Mordant Earth", "#171314", "Technical"),
+  p("Nihilakh Oxide", "#66B2A8", "Technical"),
+  p("Nurgle's Rot", "#9B8F22", "Technical"),
+  p("Stirland Battlemire", "#492B15", "Technical"),
+  p("Stirland Mud", "#382B1A", "Technical"),
+  p("Stormshield", "#EAEAEA", "Technical"),
+  p("Tesseract Glow", "#4EBF44", "Technical"),
+  p("Typhus Corrosion", "#3D3123", "Technical"),
+  p("Valhallan Blizzard", "#FFFFFF", "Technical"),
+];
+
+/** Liste ordonnée des types de peinture (pour les filtres UI) */
+export const PAINT_TYPES: PaintType[] = [
+  "Base",
+  "Layer",
+  "Shade",
+  "Dry",
+  "Contrast",
+  "Technical",
+];
+
+/** Liste ordonnée des familles de couleur (pour les filtres UI) */
+export const COLOR_FAMILIES: ColorFamily[] = [
+  "Rouge",
+  "Orange",
+  "Jaune",
+  "Vert",
+  "Bleu",
+  "Violet",
+  "Rose",
+  "Marron",
+  "Beige",
+  "Gris",
+  "Noir",
+  "Blanc",
+];
+
+/** Index rapide id → peinture pour les lookups O(1) */
+export const PAINT_MAP = new Map(CITADEL_PAINTS.map((p) => [p.id, p]));

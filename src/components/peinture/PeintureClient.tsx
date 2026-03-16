@@ -1,0 +1,300 @@
+"use client";
+
+import { useState, useMemo, useCallback } from "react";
+import { Search, X } from "lucide-react";
+import {
+  CITADEL_PAINTS,
+  PAINT_TYPES,
+  COLOR_FAMILIES,
+  getColorFamily,
+  type PaintType,
+  type ColorFamily,
+} from "@/data/citadel-paints";
+import { PaintCard } from "./PaintCard";
+
+/** Couleurs d'affichage pour les pastilles de filtre par famille de couleur */
+const FAMILY_DOT_COLORS: Record<string, string> = {
+  Rouge: "#DC2626",
+  Orange: "#EA580C",
+  Jaune: "#EAB308",
+  Vert: "#16A34A",
+  Bleu: "#2563EB",
+  Violet: "#7C3AED",
+  Rose: "#DB2777",
+  Marron: "#92400E",
+  Beige: "#D4A574",
+  Gris: "#6B7280",
+  Noir: "#1F2937",
+  Blanc: "#F3F4F6",
+};
+
+interface OwnedPaint {
+  paintId: string;
+  quantity: number;
+  notes: string | null;
+}
+
+interface Props {
+  initialOwned: OwnedPaint[];
+}
+
+/**
+ * Client component pour l'inventaire de peintures Citadel.
+ * Gère les filtres (recherche, type, stock, couleur, métallique) et les actions CRUD optimistes.
+ */
+export function PeintureClient({ initialOwned }: Props) {
+  // État des peintures possédées — Map<paintId, quantity>
+  const [owned, setOwned] = useState<Map<string, number>>(() => {
+    const m = new Map<string, number>();
+    for (const o of initialOwned) m.set(o.paintId, o.quantity);
+    return m;
+  });
+
+  // États de filtre
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<PaintType | "all">("all");
+  const [stockFilter, setStockFilter] = useState<"all" | "owned" | "missing">(
+    "all",
+  );
+  const [colorFilter, setColorFilter] = useState<ColorFamily | "all">("all");
+  const [metallicOnly, setMetallicOnly] = useState(false);
+
+  const hasActiveFilters =
+    search !== "" ||
+    typeFilter !== "all" ||
+    stockFilter !== "all" ||
+    colorFilter !== "all" ||
+    metallicOnly;
+
+  const resetFilters = useCallback(() => {
+    setSearch("");
+    setTypeFilter("all");
+    setStockFilter("all");
+    setColorFilter("all");
+    setMetallicOnly(false);
+  }, []);
+
+  /** Liste filtrée des peintures — recalculée à chaque changement de filtre */
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return CITADEL_PAINTS.filter((p) => {
+      if (typeFilter !== "all" && p.type !== typeFilter) return false;
+      if (stockFilter === "owned" && !owned.has(p.id)) return false;
+      if (stockFilter === "missing" && owned.has(p.id)) return false;
+      if (colorFilter !== "all" && getColorFamily(p.hex) !== colorFilter)
+        return false;
+      if (metallicOnly && !p.metallic) return false;
+      if (q && !p.name.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [search, typeFilter, stockFilter, colorFilter, metallicOnly, owned]);
+
+  const totalOwned = owned.size;
+  const totalPaints = CITADEL_PAINTS.length;
+
+  /** Appel API générique pour persister les changements */
+  const apiCall = useCallback(
+    async (method: string, body: Record<string, unknown>) => {
+      await fetch("/api/paints", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    },
+    [],
+  );
+
+  const addPaint = useCallback(
+    (paintId: string) => {
+      setOwned((prev) => new Map(prev).set(paintId, 1));
+      apiCall("POST", { paintId, quantity: 1 });
+    },
+    [apiCall],
+  );
+
+  const removePaint = useCallback(
+    (paintId: string) => {
+      setOwned((prev) => {
+        const next = new Map(prev);
+        next.delete(paintId);
+        return next;
+      });
+      apiCall("DELETE", { paintId });
+    },
+    [apiCall],
+  );
+
+  const setQuantity = useCallback(
+    (paintId: string, quantity: number) => {
+      if (quantity <= 0) {
+        removePaint(paintId);
+        return;
+      }
+      setOwned((prev) => new Map(prev).set(paintId, quantity));
+      apiCall("PUT", { paintId, quantity });
+    },
+    [apiCall, removePaint],
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-4xl font-extrabold tracking-tight">
+          Peintures Citadel
+        </h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          {totalOwned} / {totalPaints} peintures
+        </p>
+      </div>
+
+      {/* Filters */}
+      <div className="space-y-3">
+        {/* Row 1: Search + Stock + Reset */}
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+          <div className="relative w-full sm:w-56" role="search">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Rechercher..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              aria-label="Rechercher une peinture"
+              className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            {(["all", "owned", "missing"] as const).map((v) => {
+              const label = { all: "Toutes", owned: "Possédées", missing: "Manquantes" }[v];
+              return (
+                <FilterButton
+                  key={v}
+                  active={stockFilter === v}
+                  onClick={() => setStockFilter(v)}
+                  aria-pressed={stockFilter === v}
+                >
+                  {label}
+                </FilterButton>
+              );
+            })}
+            {hasActiveFilters && (
+              <button
+                onClick={resetFilters}
+                aria-label="Réinitialiser les filtres"
+                className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-destructive bg-destructive/10 hover:bg-destructive/20 cursor-pointer transition-colors"
+              >
+                <X className="h-3 w-3" aria-hidden="true" />
+                Reset
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2: Type + Metallic */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          {PAINT_TYPES.map((t) => (
+            <FilterButton
+              key={t}
+              active={typeFilter === t}
+              onClick={() => setTypeFilter(typeFilter === t ? "all" : t)}
+              aria-pressed={typeFilter === t}
+            >
+              {t}
+            </FilterButton>
+          ))}
+          <div className="mx-1.5 h-4 w-px bg-border" />
+          <button
+            onClick={() => setMetallicOnly((v) => !v)}
+            title="Metallique"
+            aria-label="Filtrer les peintures métalliques"
+            aria-pressed={metallicOnly}
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
+              metallicOnly
+                ? "bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/40"
+                : "bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <span className="inline-block h-2.5 w-2.5 rounded-full bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600" />
+            Metal
+          </button>
+        </div>
+
+        {/* Row 3: Color dots */}
+        <div className="flex items-center gap-2">
+          {COLOR_FAMILIES.map((c) => (
+            <button
+              key={c}
+              title={c}
+              aria-label={c}
+              aria-pressed={colorFilter === c}
+              onClick={() => setColorFilter(colorFilter === c ? "all" : c)}
+              className={`h-5 w-5 rounded-full border-2 cursor-pointer transition-all hover:scale-110 ${
+                colorFilter === c
+                  ? "border-white scale-110 ring-2 ring-white/30"
+                  : "border-transparent hover:border-white/40"
+              }`}
+              style={{ backgroundColor: FAMILY_DOT_COLORS[c] }}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Compteur de résultats — aria-live annonce les changements */}
+      <p className="text-sm text-muted-foreground" aria-live="polite">
+        {filtered.length} peinture{filtered.length !== 1 ? "s" : ""}
+      </p>
+
+      {/* Grid */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {filtered.map((paint) => (
+          <PaintCard
+            key={paint.id}
+            paint={paint}
+            quantity={owned.get(paint.id) ?? 0}
+            onAdd={() => addPaint(paint.id)}
+            onRemove={() => removePaint(paint.id)}
+            onIncrement={() =>
+              setQuantity(paint.id, (owned.get(paint.id) ?? 0) + 1)
+            }
+            onDecrement={() =>
+              setQuantity(paint.id, (owned.get(paint.id) ?? 1) - 1)
+            }
+          />
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <p className="py-12 text-center text-muted-foreground">
+          Aucune peinture trouvée.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/** Bouton de filtre générique avec état actif/inactif */
+function FilterButton({
+  active,
+  onClick,
+  children,
+  "aria-pressed": ariaPressed,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+  "aria-pressed"?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      aria-pressed={ariaPressed}
+      className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
+        active
+          ? "bg-primary text-primary-foreground"
+          : "bg-muted text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}

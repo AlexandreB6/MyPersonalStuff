@@ -1,0 +1,143 @@
+"use client";
+
+import { cn } from "@/lib/utils";
+import { Minus, Plus } from "lucide-react";
+import type { CitadelPaint } from "@/data/citadel-paints";
+
+/** Props pour la carte d'une peinture Citadel */
+interface PaintCardProps {
+  paint: CitadelPaint;
+  quantity: number;
+  onAdd: () => void;
+  onRemove: () => void;
+  onIncrement: () => void;
+  onDecrement: () => void;
+}
+
+/** Couleurs Tailwind par type de peinture pour le badge */
+const TYPE_COLORS: Record<string, string> = {
+  Base: "bg-blue-500/20 text-blue-400",
+  Layer: "bg-green-500/20 text-green-400",
+  Shade: "bg-amber-500/20 text-amber-400",
+  Dry: "bg-purple-500/20 text-purple-400",
+  Contrast: "bg-rose-500/20 text-rose-400",
+  Technical: "bg-cyan-500/20 text-cyan-400",
+};
+
+/**
+ * Détermine si une couleur hex est claire (pour adapter le texte superposé).
+ * Utilise la formule de luminance perçue ITU-R BT.601.
+ */
+function isLightColor(hex: string): boolean {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 > 160;
+}
+
+/**
+ * Carte d'une peinture Citadel — affiche le swatch de couleur, le nom,
+ * le type et les boutons d'ajout/quantité.
+ */
+export function PaintCard({
+  paint,
+  quantity,
+  onAdd,
+  onRemove,
+  onIncrement,
+  onDecrement,
+}: PaintCardProps) {
+  const inStock = quantity > 0;
+
+  return (
+    <div
+      className={cn(
+        "group relative rounded-xl border border-border/50 bg-card p-3 transition-all hover:border-border",
+        inStock && "ring-1 ring-primary/30"
+      )}
+    >
+      {/* Color swatch */}
+      {/* TODO: Vérifier le contraste WCAG sur les swatches de couleur dynamiques */}
+      <div
+        className={cn(
+          "relative mb-3 flex h-16 items-center justify-center rounded-lg border border-white/10",
+          paint.metallic && "bg-gradient-to-br"
+        )}
+        style={
+          paint.metallic
+            ? {
+                backgroundImage: `linear-gradient(135deg, ${paint.hex}, #fff 50%, ${paint.hex} 80%)`,
+              }
+            : { backgroundColor: paint.hex }
+        }
+      >
+        {inStock && (
+          <span
+            className={cn(
+              "text-sm font-bold",
+              isLightColor(paint.hex) ? "text-black/70" : "text-white/70"
+            )}
+          >
+            x{quantity}
+          </span>
+        )}
+        {/* Badge métallique — décoratif, l'info est dans le filtre */}
+        {paint.metallic && (
+          <span className="absolute top-1 right-1 text-[9px] font-bold text-white/70 bg-black/40 rounded px-1" aria-hidden="true">
+            M
+          </span>
+        )}
+      </div>
+
+      {/* Info */}
+      <p className="text-sm font-medium leading-tight truncate" title={paint.name}>
+        {paint.name}
+      </p>
+      <div className="mt-1 flex items-center gap-2">
+        <span
+          className={cn(
+            "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
+            TYPE_COLORS[paint.type] ?? "bg-muted text-muted-foreground"
+          )}
+        >
+          {paint.type}
+        </span>
+        <span className="text-[10px] text-muted-foreground uppercase">
+          {paint.hex}
+        </span>
+      </div>
+
+      {/* Actions */}
+      <div className="mt-3 flex items-center gap-1">
+        {!inStock ? (
+          <button
+            onClick={onAdd}
+            className="w-full rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+          >
+            Ajouter
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={quantity === 1 ? onRemove : onDecrement}
+              aria-label={`Diminuer la quantité de ${paint.name}`}
+              className="flex h-7 w-7 items-center justify-center rounded-md bg-muted hover:bg-destructive/20 hover:text-destructive transition-colors"
+            >
+              <Minus className="h-3 w-3" aria-hidden="true" />
+            </button>
+            <span className="flex-1 text-center text-sm font-semibold">
+              {quantity}
+            </span>
+            <button
+              onClick={onIncrement}
+              aria-label={`Augmenter la quantité de ${paint.name}`}
+              className="flex h-7 w-7 items-center justify-center rounded-md bg-muted hover:bg-primary/20 hover:text-primary transition-colors"
+            >
+              <Plus className="h-3 w-3" aria-hidden="true" />
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
