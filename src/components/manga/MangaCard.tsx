@@ -77,7 +77,7 @@ export function MangaCard({ manga, onRemove }: MangaCardProps) {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onRemove();
+            if (window.confirm(`Supprimer « ${manga.title} » de la collection ?`)) onRemove();
           }}
           aria-label={`Supprimer ${manga.title}`}
           className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-md bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-destructive/80 hover:text-white transition-all cursor-pointer"

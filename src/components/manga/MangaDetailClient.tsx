@@ -67,13 +67,14 @@ export function MangaDetailClient({ manga: initial }: Props) {
   }, [notes, apiCall]);
 
   const removeManga = useCallback(async () => {
+    if (!window.confirm(`Supprimer « ${manga.title} » de la collection ?`)) return;
     await fetch("/api/manga", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ malId: manga.malId }),
     });
     router.push("/manga");
-  }, [manga.malId, router]);
+  }, [manga.malId, manga.title, router]);
 
   return (
     <div className="space-y-8">
