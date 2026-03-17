@@ -28,41 +28,45 @@ No lint or test scripts are configured.
 
 ## Architecture
 
-Pages are server components that fetch data via Prisma or TMDB, then pass it to `*Client.tsx` client components.
+Pages are server components that fetch data via Prisma or external APIs, then pass serialized data to `*Client.tsx` client components. The app is dark-mode only (`<html lang="fr" className="dark">`).
 
-**Homepage (`/`)** — "À l'affiche": displays now-playing movies from TMDB (fr-FR locale). Server-loads 2 pages (40 movies), client paginates the rest via `/api/now-playing`.
+### Homepage (`/`) — "À l'affiche"
 
-**Cinema space (`/cinema`):**
-- Server page fetches `Movie` records from DB, serializes dates to ISO strings, passes as `initialMovies` prop
-- `CinemaClient` holds movies in state, handles add/delete optimistically
-- API routes at `/api/movies/` (GET, POST, PUT, DELETE) mutate the DB
-- TMDB calls proxied through `/api/tmdb/` routes to keep the API key server-side
+Displays now-playing movies from TMDB (fr-FR locale). Server-loads 2 pages (40 movies) with credits, client paginates the rest via `/api/now-playing`. Components: `MovieGrid`, `MovieCard`.
 
-**Movie detail (`/movie/[slug]`)** — slug format: `title-slug-{tmdbId}` (e.g. `mon-film-12345`). Use `slugify()` / `extractIdFromSlug()` from `src/lib/tmdb.ts`.
+### Movie detail (`/movie/[slug]`)
 
-**Peinture space (`/peinture`):**
-- Tracks owned Citadel paints (`OwnedPaint` model) with quantity and notes
+Slug format: `title-slug-{tmdbId}` (e.g. `mon-film-12345`). Use `slugify()` / `extractIdFromSlug()` from `src/lib/tmdb.ts`.
+
+### Peinture space (`/peinture`)
+
+- Hub page lists paint ranges; each range has its own page at `/peinture/[range]`
+- Paint catalog data lives in `src/data/` (static TS files, not DB): `citadel-paints.ts`, `monument-hobbies-paints.ts`, `paint-ranges.ts`, `paint-types.ts`
+- `RANGE_MAP` from `src/data/paint-ranges.ts` maps range slugs to their config
+- DB tracks only ownership (`OwnedPaint` model) with `paintId` + `range` unique constraint
 - Components in `src/components/peinture/` (`PeintureClient.tsx`, `PaintCard.tsx`)
-- API route at `/api/paints/`
+- API route: `/api/paints/`
 
-**Manga space (`/manga`):**
-- Tracks owned mangas (`Manga` model) with volumes count, notes, MAL metadata
+### Manga space (`/manga`)
+
+- Collection page + detail at `/manga/[slug]` (slug format: `title-slug-{malId}`, uses `extractMalIdFromSlug()` from `src/lib/jikan.ts`)
 - Search via Jikan API (MyAnimeList) → add to DB → display collection
 - ISBN barcode scanning via Quagga2 → Google Books → Jikan lookup chain
-- Components in `src/components/manga/` (`MangaClient.tsx`, `MangaCard.tsx`, `AddMangaDialog.tsx`, `ScanMangaDialog.tsx`, `MangaSearchResults.tsx`)
-- API routes at `/api/manga/` (CRUD) and `/api/manga/search/` (Jikan proxy)
+- Tracks owned volumes as JSON array in `ownedVolumesMap` field (e.g. `"[1,2,3,5]"`)
+- Components in `src/components/manga/`
+- API routes: `/api/manga/` (CRUD), `/api/manga/search/` (Jikan proxy), `/api/manga/isbn/` (ISBN lookup)
 - `src/lib/jikan.ts` — Jikan API helpers and types
 
-**API routes summary:**
-- `/api/movies/` — CRUD for personal movie collection
-- `/api/tmdb/` — proxy for TMDB search (keeps API key server-side)
+### API routes summary
+
 - `/api/now-playing/` — proxy for TMDB now-playing (client pagination)
 - `/api/paints/` — CRUD for owned paints
 - `/api/manga/` — CRUD for manga collection
 - `/api/manga/search/` — proxy for Jikan manga search
 - `/api/manga/isbn/` — ISBN lookup (Google Books → Jikan search)
 
-**shadcn/ui v4 — critical difference:**
+### shadcn/ui v4 — critical difference
+
 - No `asChild` prop. Use `render={<Component />}` for composition.
 - Example: `<DialogTrigger render={<Button />}>Label</DialogTrigger>`
 
