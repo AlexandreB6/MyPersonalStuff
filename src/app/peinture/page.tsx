@@ -1,23 +1,77 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { PeintureClient } from "@/components/peinture/PeintureClient";
+import { PAINT_RANGES } from "@/data/paint-ranges";
 
 export const metadata = {
   title: "Peinture — MyPersonalStuff",
-  description: "Inventaire de peintures Citadel",
+  description: "Inventaire de peintures miniatures",
 };
 
-/**
- * Page Peinture — charge les peintures possédées depuis la DB
- * et passe les données au client component PeintureClient.
- */
 export default async function PeinturePage() {
-  const ownedPaints = await prisma.ownedPaint.findMany();
+  const counts = await prisma.ownedPaint.groupBy({
+    by: ["range"],
+    _count: true,
+  });
+  const countMap = new Map(counts.map((c) => [c.range, c._count]));
 
-  const owned = ownedPaints.map((p) => ({
-    paintId: p.paintId,
-    quantity: p.quantity,
-    notes: p.notes,
-  }));
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-4xl font-extrabold tracking-tight">Peinture</h1>
+        <p className="text-muted-foreground mt-2 text-lg">
+          Choisissez une gamme de peinture
+        </p>
+      </div>
 
-  return <PeintureClient initialOwned={owned} />;
+      <div className="grid gap-6 sm:grid-cols-2">
+        {PAINT_RANGES.map((range) => {
+          const ownedCount = countMap.get(range.slug) ?? 0;
+          const totalCount = range.paints.length;
+          // Pick ~8 representative swatches spread across the catalog
+          const swatchCount = 8;
+          const step = Math.max(1, Math.floor(range.paints.length / swatchCount));
+          const swatches = Array.from(
+            { length: Math.min(swatchCount, range.paints.length) },
+            (_, i) => range.paints[i * step],
+          );
+
+          return (
+            <Link
+              key={range.slug}
+              href={`/peinture/${range.slug}`}
+              className="group rounded-xl border border-border/50 bg-card p-6 transition-all hover:border-border hover:shadow-lg"
+            >
+              <div className="flex items-start justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold group-hover:text-primary transition-colors">
+                    {range.name}
+                  </h2>
+                  <p className="text-sm text-muted-foreground">{range.brand}</p>
+                </div>
+                <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium">
+                  {ownedCount} / {totalCount}
+                </span>
+              </div>
+
+              <p className="mt-3 text-sm text-muted-foreground">
+                {range.description}
+              </p>
+
+              {/* Color swatches */}
+              <div className="mt-4 flex gap-1.5">
+                {swatches.map((paint) => (
+                  <div
+                    key={paint.id}
+                    className="h-6 w-6 rounded-full border border-white/10"
+                    style={{ backgroundColor: paint.hex }}
+                    title={paint.name}
+                  />
+                ))}
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
 }

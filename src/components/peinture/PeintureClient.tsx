@@ -1,16 +1,11 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { Search, X } from "lucide-react";
-import {
-  CITADEL_PAINTS,
-  PAINT_TYPES,
-  COLOR_FAMILIES,
-  getColorFamily,
-  type PaintType,
-  type ColorFamily,
-} from "@/data/citadel-paints";
+import { Search, X, ChevronLeft } from "lucide-react";
+import { getColorFamily, COLOR_FAMILIES, type ColorFamily } from "@/data/paint-types";
+import type { Paint } from "@/data/paint-types";
 import { PaintCard } from "./PaintCard";
+import Link from "next/link";
 
 /** Couleurs d'affichage pour les pastilles de filtre par famille de couleur */
 const FAMILY_DOT_COLORS: Record<string, string> = {
@@ -36,13 +31,25 @@ interface OwnedPaint {
 
 interface Props {
   initialOwned: OwnedPaint[];
+  paints: Paint[];
+  paintTypes: string[];
+  typeColors: Record<string, string>;
+  rangeSlug: string;
+  rangeName: string;
 }
 
 /**
- * Client component pour l'inventaire de peintures Citadel.
+ * Client component pour l'inventaire de peintures (générique multi-gamme).
  * Gère les filtres (recherche, type, stock, couleur, métallique) et les actions CRUD optimistes.
  */
-export function PeintureClient({ initialOwned }: Props) {
+export function PeintureClient({
+  initialOwned,
+  paints,
+  paintTypes,
+  typeColors,
+  rangeSlug,
+  rangeName,
+}: Props) {
   // État des peintures possédées — Map<paintId, quantity>
   const [owned, setOwned] = useState<Map<string, number>>(() => {
     const m = new Map<string, number>();
@@ -52,7 +59,7 @@ export function PeintureClient({ initialOwned }: Props) {
 
   // États de filtre
   const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState<PaintType | "all">("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [stockFilter, setStockFilter] = useState<"all" | "owned" | "missing">(
     "all",
   );
@@ -74,10 +81,12 @@ export function PeintureClient({ initialOwned }: Props) {
     setMetallicOnly(false);
   }, []);
 
+  const hasMetallics = useMemo(() => paints.some((p) => p.metallic), [paints]);
+
   /** Liste filtrée des peintures — recalculée à chaque changement de filtre */
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
-    return CITADEL_PAINTS.filter((p) => {
+    return paints.filter((p) => {
       if (typeFilter !== "all" && p.type !== typeFilter) return false;
       if (stockFilter === "owned" && !owned.has(p.id)) return false;
       if (stockFilter === "missing" && owned.has(p.id)) return false;
@@ -87,10 +96,10 @@ export function PeintureClient({ initialOwned }: Props) {
       if (q && !p.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [search, typeFilter, stockFilter, colorFilter, metallicOnly, owned]);
+  }, [search, typeFilter, stockFilter, colorFilter, metallicOnly, owned, paints]);
 
   const totalOwned = owned.size;
-  const totalPaints = CITADEL_PAINTS.length;
+  const totalPaints = paints.length;
 
   /** Appel API générique pour persister les changements */
   const apiCall = useCallback(
@@ -98,10 +107,10 @@ export function PeintureClient({ initialOwned }: Props) {
       await fetch("/api/paints", {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ ...body, range: rangeSlug }),
       });
     },
-    [],
+    [rangeSlug],
   );
 
   const addPaint = useCallback(
@@ -140,8 +149,15 @@ export function PeintureClient({ initialOwned }: Props) {
     <div className="space-y-6">
       {/* Header */}
       <div>
+        <Link
+          href="/peinture"
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors mb-3"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Gammes de peinture
+        </Link>
         <h1 className="text-4xl font-extrabold tracking-tight">
-          Peintures Citadel
+          Peintures {rangeName}
         </h1>
         <p className="text-muted-foreground mt-2 text-lg">
           {totalOwned} / {totalPaints} peintures
@@ -192,7 +208,7 @@ export function PeintureClient({ initialOwned }: Props) {
 
         {/* Row 2: Type + Metallic */}
         <div className="flex flex-wrap items-center gap-1.5">
-          {PAINT_TYPES.map((t) => (
+          {paintTypes.map((t) => (
             <FilterButton
               key={t}
               active={typeFilter === t}
@@ -202,21 +218,25 @@ export function PeintureClient({ initialOwned }: Props) {
               {t}
             </FilterButton>
           ))}
-          <div className="mx-1.5 h-4 w-px bg-border" />
-          <button
-            onClick={() => setMetallicOnly((v) => !v)}
-            title="Metallique"
-            aria-label="Filtrer les peintures métalliques"
-            aria-pressed={metallicOnly}
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
-              metallicOnly
-                ? "bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/40"
-                : "bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600" />
-            Metal
-          </button>
+          {hasMetallics && (
+            <>
+              <div className="mx-1.5 h-4 w-px bg-border" />
+              <button
+                onClick={() => setMetallicOnly((v) => !v)}
+                title="Metallique"
+                aria-label="Filtrer les peintures métalliques"
+                aria-pressed={metallicOnly}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
+                  metallicOnly
+                    ? "bg-yellow-500/20 text-yellow-300 ring-1 ring-yellow-500/40"
+                    : "bg-muted text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-gradient-to-br from-yellow-200 via-yellow-400 to-yellow-600" />
+                Metal
+              </button>
+            </>
+          )}
         </div>
 
         {/* Row 3: Color dots */}
@@ -239,7 +259,7 @@ export function PeintureClient({ initialOwned }: Props) {
         </div>
       </div>
 
-      {/* Compteur de résultats — aria-live annonce les changements */}
+      {/* Compteur de résultats */}
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {filtered.length} peinture{filtered.length !== 1 ? "s" : ""}
       </p>
@@ -250,6 +270,7 @@ export function PeintureClient({ initialOwned }: Props) {
           <PaintCard
             key={paint.id}
             paint={paint}
+            typeColors={typeColors}
             quantity={owned.get(paint.id) ?? 0}
             onAdd={() => addPaint(paint.id)}
             onRemove={() => removePaint(paint.id)}
