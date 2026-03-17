@@ -9,7 +9,7 @@ type Phase = "scanning" | "loading" | "confirm" | "results" | "error";
 
 interface ScanMangaDialogProps {
   ownedMalIds: Set<number>;
-  onAdd: (manga: JikanManga) => void;
+  onAdd: (manga: JikanManga, opts?: { volume?: number; editionCoverImage?: string }) => void;
   onAddVolume: (malId: number, volume: number) => void;
   onSetEditionCover: (malId: number, url: string) => void;
   mangas: { malId: number; ownedVolumesMap: number[] }[];
@@ -98,17 +98,11 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
         onSetEditionCover(topResult.mal_id, editionCoverImage);
       }
     } else {
-      // New manga — add to collection
-      onAdd(topResult);
-      // Then add volume + edition cover after POST completes
-      setTimeout(() => {
-        if (volumeNumber != null) {
-          onAddVolume(topResult.mal_id, volumeNumber);
-        }
-        if (editionCoverImage) {
-          onSetEditionCover(topResult.mal_id, editionCoverImage);
-        }
-      }, 300);
+      // New manga — pass volume + edition cover directly with onAdd
+      onAdd(topResult, {
+        volume: volumeNumber ?? undefined,
+        editionCoverImage: editionCoverImage ?? undefined,
+      });
     }
 
     // Go back to scanning for next barcode
