@@ -13,7 +13,6 @@ export interface MangaItem {
   title: string;
   titleJapanese: string | null;
   coverImage: string | null;
-  editionCoverImage: string | null;
   author: string | null;
   volumes: number | null;
   chapters: number | null;
@@ -48,9 +47,9 @@ export function MangaCard({ manga, onRemove }: MangaCardProps) {
     >
       {/* Couverture */}
       <div className="relative aspect-[2/3] bg-muted overflow-hidden">
-        {(manga.editionCoverImage || manga.coverImage) ? (
+        {manga.coverImage ? (
           <img
-            src={(manga.editionCoverImage ?? manga.coverImage)!}
+            src={manga.coverImage}
             alt={`Couverture de ${manga.title}`}
             className="h-full w-full object-cover transition-transform group-hover:scale-105"
             loading="lazy"

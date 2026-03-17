@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ChevronLeft, Star, BookOpen, Trash2, ExternalLink, Plus, ArrowLeftRight } from "lucide-react";
+import { ChevronLeft, Star, BookOpen, Trash2, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MangaItem } from "./MangaCard";
@@ -19,7 +19,6 @@ export function MangaDetailClient({ manga: initial }: Props) {
   const [savingNotes, setSavingNotes] = useState(false);
   const [extraVolume, setExtraVolume] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [showEditionCover, setShowEditionCover] = useState(!!initial.editionCoverImage);
 
   const ownedCount = manga.ownedVolumesMap.length;
   const statusLabel = manga.status === "Finished" ? "Terminé" : manga.status === "Publishing" ? "En cours" : manga.status;
@@ -92,34 +91,20 @@ export function MangaDetailClient({ manga: initial }: Props) {
       {/* Hero */}
       <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
         {/* Couverture */}
-        <div className="flex-shrink-0 w-48 sm:w-56 space-y-2">
+        <div className="flex-shrink-0 w-48 sm:w-56">
           <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-border/50 bg-muted shadow-xl">
-            {(() => {
-              const src = showEditionCover && manga.editionCoverImage
-                ? manga.editionCoverImage
-                : manga.coverImage;
-              return src ? (
-                <img
-                  src={src}
-                  alt={`Couverture de ${manga.title}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="flex h-full items-center justify-center">
-                  <BookOpen className="h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
-                </div>
-              );
-            })()}
+            {manga.coverImage ? (
+              <img
+                src={manga.coverImage}
+                alt={`Couverture de ${manga.title}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <BookOpen className="h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
+              </div>
+            )}
           </div>
-          {manga.editionCoverImage && manga.coverImage && (
-            <button
-              onClick={() => setShowEditionCover((v) => !v)}
-              className="flex items-center gap-1.5 mx-auto text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            >
-              <ArrowLeftRight className="h-3 w-3" aria-hidden="true" />
-              {showEditionCover ? "Couverture originale" : "Mon édition"}
-            </button>
-          )}
         </div>
 
         {/* Infos */}

@@ -61,15 +61,13 @@ export function MangaClient({ initialMangas }: Props) {
 
   /** Ajouter un manga depuis les résultats Jikan */
   const addManga = useCallback(
-    async (jikan: JikanManga, opts?: { volume?: number; editionCoverImage?: string }) => {
-      const initialVolumes = opts?.volume != null ? [opts.volume] : [];
+    async (jikan: JikanManga) => {
       const newManga: MangaItem = {
         id: Date.now(),
         malId: jikan.mal_id,
         title: jikan.title,
         titleJapanese: jikan.title_japanese,
         coverImage: jikan.images?.jpg?.large_image_url ?? jikan.images?.jpg?.image_url ?? null,
-        editionCoverImage: opts?.editionCoverImage ?? null,
         author: jikan.authors?.[0]?.name ?? null,
         volumes: jikan.volumes,
         chapters: jikan.chapters,
@@ -78,7 +76,7 @@ export function MangaClient({ initialMangas }: Props) {
         demographic: jikan.demographics?.[0]?.name ?? null,
         score: jikan.score,
         status: jikan.status,
-        ownedVolumesMap: initialVolumes,
+        ownedVolumesMap: [],
         notes: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -99,44 +97,6 @@ export function MangaClient({ initialMangas }: Props) {
         score: jikan.score,
         status: jikan.status,
       });
-      // Set volume and edition cover after manga is persisted
-      if (initialVolumes.length > 0 || opts?.editionCoverImage) {
-        const putData: Record<string, unknown> = { malId: jikan.mal_id };
-        if (initialVolumes.length > 0) putData.ownedVolumesMap = initialVolumes;
-        if (opts?.editionCoverImage) putData.editionCoverImage = opts.editionCoverImage;
-        await apiCall("PUT", putData);
-      }
-    },
-    [apiCall],
-  );
-
-  /** Définir la couverture d'édition pour un manga */
-  const setEditionCover = useCallback(
-    (malId: number, url: string) => {
-      setMangas((prev) =>
-        prev.map((m) => {
-          if (m.malId !== malId) return m;
-          if (m.editionCoverImage) return m; // ne pas écraser si déjà défini
-          apiCall("PUT", { malId, editionCoverImage: url });
-          return { ...m, editionCoverImage: url };
-        }),
-      );
-    },
-    [apiCall],
-  );
-
-  /** Ajouter un volume à un manga existant */
-  const addVolume = useCallback(
-    (malId: number, volume: number) => {
-      setMangas((prev) =>
-        prev.map((m) => {
-          if (m.malId !== malId) return m;
-          if (m.ownedVolumesMap.includes(volume)) return m;
-          const next = [...m.ownedVolumesMap, volume].sort((a, b) => a - b);
-          apiCall("PUT", { malId, ownedVolumesMap: next });
-          return { ...m, ownedVolumesMap: next };
-        }),
-      );
     },
     [apiCall],
   );
@@ -163,7 +123,7 @@ export function MangaClient({ initialMangas }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          <ScanMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} onAddVolume={addVolume} onSetEditionCover={setEditionCover} mangas={mangas} />
+          <ScanMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
           <AddMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
         </div>
       </div>
