@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchManga } from "@/lib/jikan";
 
+/** Extrait le numéro de tome depuis le titre Google Books. */
+function extractVolumeNumber(raw: string): number | null {
+  const match = raw.match(/(?:Vol\.?|Tome|T\.?)\s*(\d+)/i);
+  return match ? parseInt(match[1], 10) : null;
+}
+
 /** Nettoie le titre Google Books pour améliorer la recherche Jikan. */
 function cleanTitle(raw: string): string {
   return raw
@@ -41,10 +47,11 @@ export async function GET(request: NextRequest) {
   }
 
   const title: string = gbData.items[0].volumeInfo.title;
+  const volumeNumber = extractVolumeNumber(title);
   const cleanedTitle = cleanTitle(title);
 
   // 2. Jikan search
   const results = await searchManga(cleanedTitle);
 
-  return NextResponse.json({ title, cleanedTitle, results });
+  return NextResponse.json({ title, cleanedTitle, volumeNumber, results });
 }

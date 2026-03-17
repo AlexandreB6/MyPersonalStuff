@@ -101,6 +101,22 @@ export function MangaClient({ initialMangas }: Props) {
     [apiCall],
   );
 
+  /** Ajouter un volume à un manga existant */
+  const addVolume = useCallback(
+    (malId: number, volume: number) => {
+      setMangas((prev) =>
+        prev.map((m) => {
+          if (m.malId !== malId) return m;
+          if (m.ownedVolumesMap.includes(volume)) return m;
+          const next = [...m.ownedVolumesMap, volume].sort((a, b) => a - b);
+          apiCall("PUT", { malId, ownedVolumesMap: next });
+          return { ...m, ownedVolumesMap: next };
+        }),
+      );
+    },
+    [apiCall],
+  );
+
   /** Supprimer un manga */
   const removeManga = useCallback(
     (malId: number) => {
@@ -123,7 +139,7 @@ export function MangaClient({ initialMangas }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          <ScanMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
+          <ScanMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} onAddVolume={addVolume} mangas={mangas} />
           <AddMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
         </div>
       </div>

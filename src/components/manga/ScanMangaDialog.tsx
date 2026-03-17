@@ -1,18 +1,20 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ScanBarcode, X, Loader2, RotateCcw } from "lucide-react";
+import { ScanBarcode, X, Loader2, RotateCcw, Check, BookOpen, Star, List } from "lucide-react";
 import { MangaSearchResults } from "./MangaSearchResults";
 import type { JikanManga } from "@/lib/jikan";
 
-type Phase = "scanning" | "loading" | "results" | "error";
+type Phase = "scanning" | "loading" | "confirm" | "results" | "error";
 
 interface ScanMangaDialogProps {
   ownedMalIds: Set<number>;
   onAdd: (manga: JikanManga) => void;
+  onAddVolume: (malId: number, volume: number) => void;
+  mangas: { malId: number; ownedVolumesMap: number[] }[];
 }
 
-export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
+export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, mangas }: ScanMangaDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const viewfinderRef = useRef<HTMLDivElement>(null);
   const isProcessingRef = useRef(false);
@@ -20,6 +22,9 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("scanning");
   const [results, setResults] = useState<JikanManga[]>([]);
+  const [topResult, setTopResult] = useState<JikanManga | null>(null);
+  const [volumeNumber, setVolumeNumber] = useState<number | null>(null);
+  const [googleTitle, setGoogleTitle] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [isbn, setIsbn] = useState("");
 
@@ -39,6 +44,9 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
     dialogRef.current?.close();
     setPhase("scanning");
     setResults([]);
+    setTopResult(null);
+    setVolumeNumber(null);
+    setGoogleTitle("");
     setErrorMsg("");
     setIsbn("");
     isProcessingRef.current = false;
@@ -60,16 +68,47 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
         return;
       }
       setResults(data.results);
-      setPhase("results");
+      setTopResult(data.results[0]);
+      setVolumeNumber(data.volumeNumber ?? null);
+      setGoogleTitle(data.title ?? "");
+      setPhase("confirm");
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erreur réseau");
       setPhase("error");
     }
   }, []);
 
+  /** Confirme l'ajout du manga/tome */
+  const handleConfirm = useCallback(() => {
+    if (!topResult) return;
+
+    const alreadyOwned = ownedMalIds.has(topResult.mal_id);
+
+    if (alreadyOwned) {
+      // Manga already in collection — add volume if we have a number
+      if (volumeNumber != null) {
+        onAddVolume(topResult.mal_id, volumeNumber);
+      }
+    } else {
+      // New manga — add to collection
+      onAdd(topResult);
+      // Then add volume if detected
+      if (volumeNumber != null) {
+        // Small delay to let the POST complete before PUT
+        setTimeout(() => onAddVolume(topResult.mal_id, volumeNumber), 300);
+      }
+    }
+
+    // Go back to scanning for next barcode
+    startScanner();
+  }, [topResult, volumeNumber, ownedMalIds, onAdd, onAddVolume]);
+
   const startScanner = useCallback(async () => {
     setPhase("scanning");
     setResults([]);
+    setTopResult(null);
+    setVolumeNumber(null);
+    setGoogleTitle("");
     setErrorMsg("");
     isProcessingRef.current = false;
 
@@ -148,12 +187,20 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
       setOpen(false);
       setPhase("scanning");
       setResults([]);
+      setTopResult(null);
+      setVolumeNumber(null);
+      setGoogleTitle("");
       setErrorMsg("");
       isProcessingRef.current = false;
     };
     dialog.addEventListener("cancel", handleCancel);
     return () => dialog.removeEventListener("cancel", handleCancel);
   }, [stopQuagga]);
+
+  // Check if the volume is already owned
+  const isVolumeAlreadyOwned = topResult && volumeNumber != null
+    ? mangas.find((m) => m.malId === topResult.mal_id)?.ownedVolumesMap.includes(volumeNumber) ?? false
+    : false;
 
   return (
     <>
@@ -177,7 +224,8 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
               <h2 className="text-lg font-semibold">
                 {phase === "scanning" && "Scanner un code-barres"}
                 {phase === "loading" && "Recherche en cours…"}
-                {phase === "results" && `Résultats pour ISBN ${isbn}`}
+                {phase === "confirm" && "Confirmer l'ajout"}
+                {phase === "results" && `Tous les résultats`}
                 {phase === "error" && "Erreur"}
               </h2>
               <button
@@ -214,17 +262,127 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
                 </div>
               )}
 
-              {/* Results phase */}
+              {/* Confirm phase — show top result for validation */}
+              {phase === "confirm" && topResult && (
+                <div className="space-y-4">
+                  {/* Google Books info */}
+                  <p className="text-xs text-muted-foreground text-center">
+                    ISBN {isbn} → {googleTitle}
+                  </p>
+
+                  {/* Manga card preview */}
+                  <div className="flex gap-4 rounded-lg border border-primary/30 bg-primary/5 p-4">
+                    <div className="h-32 w-22 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                      {topResult.images?.jpg?.image_url ? (
+                        <img
+                          src={topResult.images.jpg.image_url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <BookOpen className="h-5 w-5 text-muted-foreground/50" aria-hidden="true" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 min-w-0 flex flex-col">
+                      <p className="text-base font-semibold leading-tight">{topResult.title}</p>
+                      {topResult.authors?.[0] && (
+                        <p className="text-sm text-muted-foreground mt-0.5">{topResult.authors[0].name}</p>
+                      )}
+
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        {topResult.score != null && topResult.score > 0 && (
+                          <span className="inline-flex items-center gap-0.5 text-amber-400 font-medium">
+                            <Star className="h-3 w-3 fill-amber-400" aria-hidden="true" />
+                            {topResult.score.toFixed(1)}
+                          </span>
+                        )}
+                        {topResult.volumes != null && <span>{topResult.volumes} vol.</span>}
+                      </div>
+
+                      {/* Volume badge */}
+                      {volumeNumber != null && (
+                        <div className="mt-3">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
+                            isVolumeAlreadyOwned
+                              ? "bg-amber-500/15 text-amber-400"
+                              : "bg-primary/15 text-primary"
+                          }`}>
+                            Tome {volumeNumber}
+                            {isVolumeAlreadyOwned && " (déjà possédé)"}
+                          </span>
+                        </div>
+                      )}
+
+                      {ownedMalIds.has(topResult.mal_id) && (
+                        <p className="mt-1 text-xs text-emerald-400 font-medium">
+                          Déjà dans ta collection
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-col gap-2">
+                    <button
+                      onClick={handleConfirm}
+                      disabled={isVolumeAlreadyOwned && ownedMalIds.has(topResult.mal_id)}
+                      className="flex items-center justify-center gap-2 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
+                    >
+                      <Check className="h-4 w-4" aria-hidden="true" />
+                      {ownedMalIds.has(topResult.mal_id)
+                        ? volumeNumber != null
+                          ? isVolumeAlreadyOwned
+                            ? `Tome ${volumeNumber} déjà possédé`
+                            : `Ajouter le tome ${volumeNumber}`
+                          : "Déjà dans la collection"
+                        : volumeNumber != null
+                          ? `Ajouter + tome ${volumeNumber}`
+                          : "Ajouter à la collection"
+                      }
+                    </button>
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setPhase("results")}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
+                      >
+                        <List className="h-4 w-4" aria-hidden="true" />
+                        Voir tous les résultats
+                      </button>
+                      <button
+                        onClick={startScanner}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
+                      >
+                        <ScanBarcode className="h-4 w-4" aria-hidden="true" />
+                        Re-scanner
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Results phase — all Jikan results */}
               {phase === "results" && (
                 <div className="space-y-3">
                   <MangaSearchResults results={results} ownedMalIds={ownedMalIds} onAdd={onAdd} />
-                  <button
-                    onClick={startScanner}
-                    className="flex items-center gap-2 mx-auto rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
-                  >
-                    <ScanBarcode className="h-4 w-4" aria-hidden="true" />
-                    Scanner un autre code-barres
-                  </button>
+                  <div className="flex gap-2 justify-center">
+                    <button
+                      onClick={() => setPhase("confirm")}
+                      className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
+                    >
+                      Retour
+                    </button>
+                    <button
+                      onClick={startScanner}
+                      className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
+                    >
+                      <ScanBarcode className="h-4 w-4" aria-hidden="true" />
+                      Scanner un autre
+                    </button>
+                  </div>
                 </div>
               )}
 
