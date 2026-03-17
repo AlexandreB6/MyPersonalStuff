@@ -46,12 +46,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const title: string = gbData.items[0].volumeInfo.title;
+  const volumeInfo = gbData.items[0].volumeInfo;
+  const title: string = volumeInfo.title;
   const volumeNumber = extractVolumeNumber(title);
   const cleanedTitle = cleanTitle(title);
+
+  // Extract Google Books cover (prefer large thumbnail)
+  const editionCoverImage: string | null =
+    volumeInfo.imageLinks?.thumbnail?.replace("&edge=curl", "") ??
+    volumeInfo.imageLinks?.smallThumbnail?.replace("&edge=curl", "") ??
+    null;
 
   // 2. Jikan search
   const results = await searchManga(cleanedTitle);
 
-  return NextResponse.json({ title, cleanedTitle, volumeNumber, results });
+  return NextResponse.json({ title, cleanedTitle, volumeNumber, editionCoverImage, results });
 }

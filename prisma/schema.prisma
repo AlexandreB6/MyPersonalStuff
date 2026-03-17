@@ -29,7 +29,8 @@ model Manga {
   malId          Int      @unique /// Identifiant MyAnimeList
   title          String
   titleJapanese  String?
-  coverImage     String?  /// URL image couverture
+  coverImage          String?  /// URL image couverture (MAL/Jikan)
+  editionCoverImage   String?  /// URL image couverture de l'édition physique (Google Books)
   author         String?
   volumes        Int?     /// Nb volumes total (null si en cours)
   chapters       Int?     /// Nb chapitres total

@@ -68,6 +68,7 @@ export function MangaClient({ initialMangas }: Props) {
         title: jikan.title,
         titleJapanese: jikan.title_japanese,
         coverImage: jikan.images?.jpg?.large_image_url ?? jikan.images?.jpg?.image_url ?? null,
+        editionCoverImage: null,
         author: jikan.authors?.[0]?.name ?? null,
         volumes: jikan.volumes,
         chapters: jikan.chapters,
@@ -97,6 +98,21 @@ export function MangaClient({ initialMangas }: Props) {
         score: jikan.score,
         status: jikan.status,
       });
+    },
+    [apiCall],
+  );
+
+  /** Définir la couverture d'édition pour un manga */
+  const setEditionCover = useCallback(
+    (malId: number, url: string) => {
+      setMangas((prev) =>
+        prev.map((m) => {
+          if (m.malId !== malId) return m;
+          if (m.editionCoverImage) return m; // ne pas écraser si déjà défini
+          apiCall("PUT", { malId, editionCoverImage: url });
+          return { ...m, editionCoverImage: url };
+        }),
+      );
     },
     [apiCall],
   );
@@ -139,7 +155,7 @@ export function MangaClient({ initialMangas }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          <ScanMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} onAddVolume={addVolume} mangas={mangas} />
+          <ScanMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} onAddVolume={addVolume} onSetEditionCover={setEditionCover} mangas={mangas} />
           <AddMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
         </div>
       </div>

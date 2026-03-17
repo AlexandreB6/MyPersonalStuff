@@ -11,10 +11,11 @@ interface ScanMangaDialogProps {
   ownedMalIds: Set<number>;
   onAdd: (manga: JikanManga) => void;
   onAddVolume: (malId: number, volume: number) => void;
+  onSetEditionCover: (malId: number, url: string) => void;
   mangas: { malId: number; ownedVolumesMap: number[] }[];
 }
 
-export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, mangas }: ScanMangaDialogProps) {
+export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionCover, mangas }: ScanMangaDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const viewfinderRef = useRef<HTMLDivElement>(null);
   const isProcessingRef = useRef(false);
@@ -25,6 +26,7 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, mangas }: Sca
   const [topResult, setTopResult] = useState<JikanManga | null>(null);
   const [volumeNumber, setVolumeNumber] = useState<number | null>(null);
   const [googleTitle, setGoogleTitle] = useState("");
+  const [editionCoverImage, setEditionCoverImage] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [isbn, setIsbn] = useState("");
 
@@ -46,6 +48,7 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, mangas }: Sca
     setResults([]);
     setTopResult(null);
     setVolumeNumber(null);
+    setEditionCoverImage(null);
     setGoogleTitle("");
     setErrorMsg("");
     setIsbn("");
@@ -70,6 +73,7 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, mangas }: Sca
       setResults(data.results);
       setTopResult(data.results[0]);
       setVolumeNumber(data.volumeNumber ?? null);
+      setEditionCoverImage(data.editionCoverImage ?? null);
       setGoogleTitle(data.title ?? "");
       setPhase("confirm");
     } catch (err) {
@@ -89,25 +93,34 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, mangas }: Sca
       if (volumeNumber != null) {
         onAddVolume(topResult.mal_id, volumeNumber);
       }
+      // Save edition cover if available
+      if (editionCoverImage) {
+        onSetEditionCover(topResult.mal_id, editionCoverImage);
+      }
     } else {
       // New manga — add to collection
       onAdd(topResult);
-      // Then add volume if detected
-      if (volumeNumber != null) {
-        // Small delay to let the POST complete before PUT
-        setTimeout(() => onAddVolume(topResult.mal_id, volumeNumber), 300);
-      }
+      // Then add volume + edition cover after POST completes
+      setTimeout(() => {
+        if (volumeNumber != null) {
+          onAddVolume(topResult.mal_id, volumeNumber);
+        }
+        if (editionCoverImage) {
+          onSetEditionCover(topResult.mal_id, editionCoverImage);
+        }
+      }, 300);
     }
 
     // Go back to scanning for next barcode
     startScanner();
-  }, [topResult, volumeNumber, ownedMalIds, onAdd, onAddVolume]);
+  }, [topResult, volumeNumber, editionCoverImage, ownedMalIds, onAdd, onAddVolume, onSetEditionCover]);
 
   const startScanner = useCallback(async () => {
     setPhase("scanning");
     setResults([]);
     setTopResult(null);
     setVolumeNumber(null);
+    setEditionCoverImage(null);
     setGoogleTitle("");
     setErrorMsg("");
     isProcessingRef.current = false;
@@ -189,6 +202,7 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, mangas }: Sca
       setResults([]);
       setTopResult(null);
       setVolumeNumber(null);
+      setEditionCoverImage(null);
       setGoogleTitle("");
       setErrorMsg("");
       isProcessingRef.current = false;
