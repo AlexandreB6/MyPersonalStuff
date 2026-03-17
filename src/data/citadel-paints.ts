@@ -3,6 +3,10 @@
  * Données statiques utilisées par l'inventaire de peintures.
  */
 
+import type { Paint, PaintRange } from "./paint-types";
+export { getColorFamily, COLOR_FAMILIES } from "./paint-types";
+export type { ColorFamily } from "./paint-types";
+
 /** Types de peinture Citadel disponibles */
 export type PaintType =
   | "Base"
@@ -12,28 +16,9 @@ export type PaintType =
   | "Contrast"
   | "Technical";
 
-/** Familles de couleur dérivées depuis le code hex */
-export type ColorFamily =
-  | "Rouge"
-  | "Orange"
-  | "Jaune"
-  | "Vert"
-  | "Bleu"
-  | "Violet"
-  | "Rose"
-  | "Marron"
-  | "Gris"
-  | "Noir"
-  | "Blanc"
-  | "Beige";
-
 /** Structure d'une peinture Citadel */
-export interface CitadelPaint {
-  id: string;
-  name: string;
-  hex: string;
+export interface CitadelPaint extends Paint {
   type: PaintType;
-  metallic?: boolean;
 }
 
 /** Génère un slug URL-safe depuis le nom de la peinture */
@@ -47,47 +32,6 @@ function slug(name: string): string {
 /** Raccourci pour créer une entrée CitadelPaint */
 function p(name: string, hex: string, type: PaintType, metallic?: boolean): CitadelPaint {
   return { id: slug(name), name, hex, type, ...(metallic && { metallic }) };
-}
-
-/**
- * Dérive la famille de couleur depuis un code hex.
- * Utilise la teinte HSL et des heuristiques pour les cas limites
- * (marron, beige, gris, noir, blanc).
- */
-export function getColorFamily(hex: string): ColorFamily {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-
-  const max = Math.max(r, g, b);
-  const min = Math.min(r, g, b);
-  const delta = max - min;
-  const lightness = (max + min) / 2 / 255;
-  const saturation = delta === 0 ? 0 : delta / (1 - Math.abs(2 * lightness - 1)) / 255;
-
-  if (max <= 30) return "Noir";
-  if (min >= 230) return "Blanc";
-  if (saturation < 0.15 && lightness > 0.12 && lightness < 0.9) return "Gris";
-  if (saturation < 0.15 && lightness >= 0.9) return "Blanc";
-
-  let hue = 0;
-  if (delta > 0) {
-    if (max === r) hue = 60 * (((g - b) / delta) % 6);
-    else if (max === g) hue = 60 * ((b - r) / delta + 2);
-    else hue = 60 * ((r - g) / delta + 4);
-    if (hue < 0) hue += 360;
-  }
-
-  if (hue >= 0 && hue < 45 && lightness < 0.45 && saturation < 0.8) return "Marron";
-  if (hue >= 30 && hue < 55 && lightness > 0.55 && saturation < 0.6) return "Beige";
-
-  if (hue < 15 || hue >= 345) return "Rouge";
-  if (hue < 40) return "Orange";
-  if (hue < 65) return "Jaune";
-  if (hue < 170) return "Vert";
-  if (hue < 260) return "Bleu";
-  if (hue < 300) return "Violet";
-  return "Rose";
 }
 
 export const CITADEL_PAINTS: CitadelPaint[] = [
@@ -356,21 +300,26 @@ export const PAINT_TYPES: PaintType[] = [
   "Technical",
 ];
 
-/** Liste ordonnée des familles de couleur (pour les filtres UI) */
-export const COLOR_FAMILIES: ColorFamily[] = [
-  "Rouge",
-  "Orange",
-  "Jaune",
-  "Vert",
-  "Bleu",
-  "Violet",
-  "Rose",
-  "Marron",
-  "Beige",
-  "Gris",
-  "Noir",
-  "Blanc",
-];
+/** Couleurs CSS des badges par type de peinture Citadel */
+export const CITADEL_TYPE_COLORS: Record<string, string> = {
+  Base: "bg-blue-500/20 text-blue-400",
+  Layer: "bg-green-500/20 text-green-400",
+  Shade: "bg-amber-500/20 text-amber-400",
+  Dry: "bg-purple-500/20 text-purple-400",
+  Contrast: "bg-rose-500/20 text-rose-400",
+  Technical: "bg-cyan-500/20 text-cyan-400",
+};
 
 /** Index rapide id → peinture pour les lookups O(1) */
 export const PAINT_MAP = new Map(CITADEL_PAINTS.map((p) => [p.id, p]));
+
+/** Gamme Citadel complète */
+export const CITADEL_RANGE: PaintRange = {
+  slug: "citadel",
+  brand: "Games Workshop",
+  name: "Citadel",
+  description: "Peintures Citadel pour figurines Warhammer",
+  paints: CITADEL_PAINTS,
+  paintTypes: PAINT_TYPES,
+  typeColors: CITADEL_TYPE_COLORS,
+};

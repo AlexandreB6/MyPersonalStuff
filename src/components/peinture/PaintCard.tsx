@@ -2,27 +2,18 @@
 
 import { cn } from "@/lib/utils";
 import { Minus, Plus } from "lucide-react";
-import type { CitadelPaint } from "@/data/citadel-paints";
+import type { Paint } from "@/data/paint-types";
 
-/** Props pour la carte d'une peinture Citadel */
+/** Props pour la carte d'une peinture */
 interface PaintCardProps {
-  paint: CitadelPaint;
+  paint: Paint;
   quantity: number;
+  typeColors: Record<string, string>;
   onAdd: () => void;
   onRemove: () => void;
   onIncrement: () => void;
   onDecrement: () => void;
 }
-
-/** Couleurs Tailwind par type de peinture pour le badge */
-const TYPE_COLORS: Record<string, string> = {
-  Base: "bg-blue-500/20 text-blue-400",
-  Layer: "bg-green-500/20 text-green-400",
-  Shade: "bg-amber-500/20 text-amber-400",
-  Dry: "bg-purple-500/20 text-purple-400",
-  Contrast: "bg-rose-500/20 text-rose-400",
-  Technical: "bg-cyan-500/20 text-cyan-400",
-};
 
 /**
  * Détermine si une couleur hex est claire (pour adapter le texte superposé).
@@ -42,6 +33,7 @@ function isLightColor(hex: string): boolean {
 export function PaintCard({
   paint,
   quantity,
+  typeColors,
   onAdd,
   onRemove,
   onIncrement,
@@ -97,7 +89,7 @@ export function PaintCard({
         <span
           className={cn(
             "inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider",
-            TYPE_COLORS[paint.type] ?? "bg-muted text-muted-foreground"
+            typeColors[paint.type] ?? "bg-muted text-muted-foreground"
           )}
         >
           {paint.type}

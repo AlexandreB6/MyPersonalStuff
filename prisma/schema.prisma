@@ -10,14 +10,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/// Peinture Citadel possédée par l'utilisateur
+/// Peinture possédée par l'utilisateur (multi-gamme)
 model OwnedPaint {
   id        Int      @id @default(autoincrement())
-  paintId   String   @unique /// Identifiant slug de la peinture (ex: "abaddon-black")
+  paintId   String   /// Identifiant slug de la peinture (ex: "abaddon-black")
+  range     String   @default("citadel") /// Gamme de peinture ("citadel", "monument-hobbies")
   quantity  Int      @default(1)
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([paintId, range])
 }
 
 /// Film suivi dans la collection personnelle
