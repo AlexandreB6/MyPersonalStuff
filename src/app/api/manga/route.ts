@@ -29,9 +29,9 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(manga);
 }
 
-/** Met à jour ownedVolumesMap, notes et/ou editionCoverImage d'un manga. */
+/** Met à jour ownedVolumesMap et/ou notes d'un manga. */
 export async function PUT(req: NextRequest) {
-  const { malId, ownedVolumesMap, notes, editionCoverImage } = await req.json();
+  const { malId, ownedVolumesMap, notes } = await req.json();
   if (!malId) {
     return NextResponse.json({ error: "malId required" }, { status: 400 });
   }
@@ -39,7 +39,6 @@ export async function PUT(req: NextRequest) {
   const data: Record<string, unknown> = {};
   if (ownedVolumesMap !== undefined) data.ownedVolumesMap = JSON.stringify(ownedVolumesMap);
   if (notes !== undefined) data.notes = notes;
-  if (editionCoverImage !== undefined) data.editionCoverImage = editionCoverImage;
 
   const manga = await prisma.manga.update({
     where: { malId },
