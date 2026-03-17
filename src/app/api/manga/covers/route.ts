@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   const res = await fetch(
-    `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}&limit=20&fields=title,author_name,publisher,cover_i`,
+    `https://openlibrary.org/search.json?q=${encodeURIComponent(q + " vol 1")}&limit=20&fields=title,author_name,publisher,cover_i`,
   );
   if (!res.ok) {
     return NextResponse.json({ error: "Erreur Open Library" }, { status: 502 });
