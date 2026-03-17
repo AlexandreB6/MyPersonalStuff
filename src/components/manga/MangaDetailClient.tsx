@@ -306,7 +306,7 @@ export function MangaDetailClient({ manga: initial }: Props) {
                   title={`${cover.title}${cover.publisher ? ` — ${cover.publisher}` : ""}`}
                 >
                   <img
-                    src={cover.coverUrl}
+                    src={cover.coverUrl + "?default=false"}
                     alt={cover.title}
                     className="h-full w-full object-cover"
                     loading="lazy"
