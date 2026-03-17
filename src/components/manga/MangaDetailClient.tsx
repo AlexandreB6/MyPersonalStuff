@@ -5,6 +5,7 @@ import { ChevronLeft, Star, BookOpen, Trash2, ExternalLink, Plus } from "lucide-
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MangaItem } from "./MangaCard";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { VolumeGrid } from "./VolumeGrid";
 
 interface Props {
@@ -17,6 +18,7 @@ export function MangaDetailClient({ manga: initial }: Props) {
   const [notes, setNotes] = useState(initial.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
   const [extraVolume, setExtraVolume] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const ownedCount = manga.ownedVolumesMap.length;
   const statusLabel = manga.status === "Finished" ? "Terminé" : manga.status === "Publishing" ? "En cours" : manga.status;
@@ -67,14 +69,13 @@ export function MangaDetailClient({ manga: initial }: Props) {
   }, [notes, apiCall]);
 
   const removeManga = useCallback(async () => {
-    if (!window.confirm(`Supprimer « ${manga.title} » de la collection ?`)) return;
     await fetch("/api/manga", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ malId: manga.malId }),
     });
     router.push("/manga");
-  }, [manga.malId, manga.title, router]);
+  }, [manga.malId, router]);
 
   return (
     <div className="space-y-8">
@@ -270,13 +271,24 @@ export function MangaDetailClient({ manga: initial }: Props) {
       {/* Zone danger */}
       <section className="border-t border-border pt-6">
         <button
-          onClick={removeManga}
+          onClick={() => setConfirmDelete(true)}
           className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20 transition-colors cursor-pointer"
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
           Supprimer de ma collection
         </button>
       </section>
+
+      <ConfirmDialog
+        open={confirmDelete}
+        title="Supprimer ce manga"
+        description={`« ${manga.title} » sera retiré de ta collection. Cette action est irréversible.`}
+        onConfirm={() => {
+          setConfirmDelete(false);
+          removeManga();
+        }}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }

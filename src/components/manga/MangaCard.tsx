@@ -1,8 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Star, BookOpen, Trash2 } from "lucide-react";
 import { mangaSlugify } from "@/lib/jikan";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 
 /** Manga tel que stocké en DB, avec dates sérialisées en ISO string */
 export interface MangaItem {
@@ -32,11 +34,13 @@ interface MangaCardProps {
 
 /** Carte d'un manga dans la collection — couverture, infos, progression. */
 export function MangaCard({ manga, onRemove }: MangaCardProps) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const statusLabel = manga.status === "Finished" ? "Terminé" : manga.status === "Publishing" ? "En cours" : manga.status;
   const ownedCount = manga.ownedVolumesMap.length;
   const slug = mangaSlugify(manga.title, manga.malId);
 
   return (
+    <>
     <Link
       href={`/manga/${slug}`}
       className="group relative flex flex-col rounded-xl border border-border/50 bg-card overflow-hidden transition-all hover:border-border hover:shadow-lg"
@@ -77,7 +81,7 @@ export function MangaCard({ manga, onRemove }: MangaCardProps) {
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (window.confirm(`Supprimer « ${manga.title} » de la collection ?`)) onRemove();
+            setConfirmOpen(true);
           }}
           aria-label={`Supprimer ${manga.title}`}
           className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-md bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-destructive/80 hover:text-white transition-all cursor-pointer"
@@ -122,5 +126,17 @@ export function MangaCard({ manga, onRemove }: MangaCardProps) {
         </div>
       </div>
     </Link>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="Supprimer ce manga"
+        description={`« ${manga.title} » sera retiré de ta collection. Cette action est irréversible.`}
+        onConfirm={() => {
+          setConfirmOpen(false);
+          onRemove();
+        }}
+        onCancel={() => setConfirmOpen(false)}
+      />
+    </>
   );
 }
