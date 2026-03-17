@@ -1,12 +1,19 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ChevronLeft, Star, BookOpen, Trash2, ExternalLink, Plus } from "lucide-react";
+import { ChevronLeft, Star, BookOpen, Trash2, ExternalLink, Plus, ImagePlus, Loader2, X, Undo2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MangaItem } from "./MangaCard";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { VolumeGrid } from "./VolumeGrid";
+
+interface CoverResult {
+  title: string;
+  authors: string | null;
+  publisher: string | null;
+  coverUrl: string;
+}
 
 interface Props {
   manga: MangaItem;
@@ -20,9 +27,15 @@ export function MangaDetailClient({ manga: initial }: Props) {
   const [extraVolume, setExtraVolume] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
 
+  // Cover picker state
+  const [showCoverPicker, setShowCoverPicker] = useState(false);
+  const [coverResults, setCoverResults] = useState<CoverResult[]>([]);
+  const [coverLoading, setCoverLoading] = useState(false);
+
   const ownedCount = manga.ownedVolumesMap.length;
   const statusLabel = manga.status === "Finished" ? "Terminé" : manga.status === "Publishing" ? "En cours" : manga.status;
   const genres = manga.genres?.split(", ").filter(Boolean) ?? [];
+  const displayCover = manga.editionCoverImage ?? manga.coverImage;
 
   const apiCall = useCallback(
     async (body: Record<string, unknown>) => {
@@ -77,6 +90,33 @@ export function MangaDetailClient({ manga: initial }: Props) {
     router.push("/manga");
   }, [manga.malId, router]);
 
+  const searchCovers = useCallback(async () => {
+    setShowCoverPicker(true);
+    setCoverLoading(true);
+    try {
+      const res = await fetch(`/api/manga/covers?q=${encodeURIComponent(manga.title)}`);
+      if (res.ok) {
+        setCoverResults(await res.json());
+      }
+    } finally {
+      setCoverLoading(false);
+    }
+  }, [manga.title]);
+
+  const selectCover = useCallback(
+    (url: string) => {
+      setManga((prev) => ({ ...prev, editionCoverImage: url }));
+      apiCall({ editionCoverImage: url });
+      setShowCoverPicker(false);
+    },
+    [apiCall],
+  );
+
+  const resetCover = useCallback(() => {
+    setManga((prev) => ({ ...prev, editionCoverImage: null }));
+    apiCall({ editionCoverImage: null });
+  }, [apiCall]);
+
   return (
     <div className="space-y-8">
       {/* Breadcrumb */}
@@ -91,11 +131,11 @@ export function MangaDetailClient({ manga: initial }: Props) {
       {/* Hero */}
       <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
         {/* Couverture */}
-        <div className="flex-shrink-0 w-48 sm:w-56">
+        <div className="flex-shrink-0 w-48 sm:w-56 space-y-2">
           <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-border/50 bg-muted shadow-xl">
-            {manga.coverImage ? (
+            {displayCover ? (
               <img
-                src={manga.coverImage}
+                src={displayCover}
                 alt={`Couverture de ${manga.title}`}
                 className="h-full w-full object-cover"
               />
@@ -103,6 +143,24 @@ export function MangaDetailClient({ manga: initial }: Props) {
               <div className="flex h-full items-center justify-center">
                 <BookOpen className="h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
               </div>
+            )}
+          </div>
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={searchCovers}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              <ImagePlus className="h-3 w-3" aria-hidden="true" />
+              Changer la couverture
+            </button>
+            {manga.editionCoverImage && (
+              <button
+                onClick={resetCover}
+                className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                title="Remettre la couverture originale"
+              >
+                <Undo2 className="h-3 w-3" aria-hidden="true" />
+              </button>
             )}
           </div>
         </div>
@@ -215,6 +273,56 @@ export function MangaDetailClient({ manga: initial }: Props) {
         </div>
       </div>
 
+      {/* Cover picker */}
+      {showCoverPicker && (
+        <section className="rounded-xl border border-border p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold">Choisir une couverture</h2>
+            <button
+              onClick={() => setShowCoverPicker(false)}
+              className="flex h-8 w-8 items-center justify-center rounded-md hover:bg-muted transition-colors cursor-pointer"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+
+          {coverLoading && (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
+          {!coverLoading && coverResults.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-8">Aucune couverture trouvée</p>
+          )}
+
+          {!coverLoading && coverResults.length > 0 && (
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+              {coverResults.map((cover, i) => (
+                <button
+                  key={i}
+                  onClick={() => selectCover(cover.coverUrl)}
+                  className="group relative aspect-[2/3] overflow-hidden rounded-lg border border-border/50 bg-muted hover:border-primary hover:ring-2 hover:ring-primary/50 transition-all cursor-pointer"
+                  title={`${cover.title}${cover.publisher ? ` — ${cover.publisher}` : ""}`}
+                >
+                  <img
+                    src={cover.coverUrl}
+                    alt={cover.title}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                  {cover.publisher && (
+                    <span className="absolute bottom-0 left-0 right-0 bg-black/70 px-1.5 py-1 text-[9px] text-white/80 truncate">
+                      {cover.publisher}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Synopsis */}
       {manga.synopsis && (
         <section>
@@ -231,7 +339,6 @@ export function MangaDetailClient({ manga: initial }: Props) {
           ownedVolumes={manga.ownedVolumesMap}
           onToggle={toggleVolume}
         />
-        {/* Ajout de volume hors grille (si en cours de publication / inconnu) */}
         {(manga.volumes == null || manga.ownedVolumesMap.some((v) => v > (manga.volumes ?? 0))) && (
           <div className="mt-4 flex items-center gap-2">
             <input

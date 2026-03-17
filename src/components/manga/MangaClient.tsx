@@ -68,6 +68,7 @@ export function MangaClient({ initialMangas }: Props) {
         title: jikan.title,
         titleJapanese: jikan.title_japanese,
         coverImage: jikan.images?.jpg?.large_image_url ?? jikan.images?.jpg?.image_url ?? null,
+        editionCoverImage: null,
         author: jikan.authors?.[0]?.name ?? null,
         volumes: jikan.volumes,
         chapters: jikan.chapters,
