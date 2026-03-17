@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback } from "react";
 import { Search, X } from "lucide-react";
 import { MangaCard, type MangaItem } from "./MangaCard";
 import { AddMangaDialog } from "./AddMangaDialog";
+import { ScanMangaDialog } from "./ScanMangaDialog";
 import type { JikanManga } from "@/lib/jikan";
 
 interface Props {
@@ -121,7 +122,10 @@ export function MangaClient({ initialMangas }: Props) {
             {mangas.length} manga{mangas.length !== 1 ? "s" : ""} · {totalVolumes} volume{totalVolumes !== 1 ? "s" : ""}
           </p>
         </div>
-        <AddMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
+        <div className="flex gap-2">
+          <ScanMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
+          <AddMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
+        </div>
       </div>
 
       {/* Filtres */}

@@ -24,6 +24,7 @@ No lint or test scripts are configured.
 - **TMDB API** for movie metadata
 - **Jikan API** (`api.jikan.moe/v4`) for manga metadata (no auth required)
 - **lucide-react** for icons
+- **Quagga2** (`@ericblade/quagga2`) for barcode scanning (EAN-13/ISBN)
 
 ## Architecture
 
@@ -47,7 +48,8 @@ Pages are server components that fetch data via Prisma or TMDB, then pass it to 
 **Manga space (`/manga`):**
 - Tracks owned mangas (`Manga` model) with volumes count, notes, MAL metadata
 - Search via Jikan API (MyAnimeList) → add to DB → display collection
-- Components in `src/components/manga/` (`MangaClient.tsx`, `MangaCard.tsx`, `AddMangaDialog.tsx`)
+- ISBN barcode scanning via Quagga2 → Google Books → Jikan lookup chain
+- Components in `src/components/manga/` (`MangaClient.tsx`, `MangaCard.tsx`, `AddMangaDialog.tsx`, `ScanMangaDialog.tsx`, `MangaSearchResults.tsx`)
 - API routes at `/api/manga/` (CRUD) and `/api/manga/search/` (Jikan proxy)
 - `src/lib/jikan.ts` — Jikan API helpers and types
 
@@ -58,6 +60,7 @@ Pages are server components that fetch data via Prisma or TMDB, then pass it to 
 - `/api/paints/` — CRUD for owned paints
 - `/api/manga/` — CRUD for manga collection
 - `/api/manga/search/` — proxy for Jikan manga search
+- `/api/manga/isbn/` — ISBN lookup (Google Books → Jikan search)
 
 **shadcn/ui v4 — critical difference:**
 - No `asChild` prop. Use `render={<Component />}` for composition.

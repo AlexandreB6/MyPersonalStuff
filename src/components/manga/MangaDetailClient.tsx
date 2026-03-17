@@ -231,7 +231,6 @@ export function MangaDetailClient({ manga: initial }: Props) {
           ownedVolumes={manga.ownedVolumesMap}
           onToggle={toggleVolume}
         />
-        {/* Ajout de volume hors grille (si en cours de publication / inconnu) */}
         {(manga.volumes == null || manga.ownedVolumesMap.some((v) => v > (manga.volumes ?? 0))) && (
           <div className="mt-4 flex items-center gap-2">
             <input
