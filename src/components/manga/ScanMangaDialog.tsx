@@ -29,6 +29,18 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
   const [editionCoverImage, setEditionCoverImage] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [isbn, setIsbn] = useState("");
+  const lookupIsbnRef = useRef<(isbn: string) => void>(() => {});
+
+  const resetState = useCallback(() => {
+    setResults([]);
+    setTopResult(null);
+    setVolumeNumber(null);
+    setEditionCoverImage(null);
+    setGoogleTitle("");
+    setErrorMsg("");
+    setIsbn("");
+    isProcessingRef.current = false;
+  }, []);
 
   const stopQuagga = useCallback(async () => {
     try {
@@ -40,22 +52,51 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
     }
   }, []);
 
-  const closeDialog = useCallback(() => {
-    stopQuagga();
-    setOpen(false);
-    dialogRef.current?.close();
-    setPhase("scanning");
-    setResults([]);
-    setTopResult(null);
-    setVolumeNumber(null);
-    setEditionCoverImage(null);
-    setGoogleTitle("");
-    setErrorMsg("");
-    setIsbn("");
-    isProcessingRef.current = false;
-  }, [stopQuagga]);
+  const initQuagga = useCallback(async () => {
+    // Wait for DOM to render the viewfinder
+    await new Promise((r) => setTimeout(r, 150));
+    if (!viewfinderRef.current) return;
 
-  const lookupIsbn = useCallback(async (detectedIsbn: string) => {
+    const Quagga = (await import("@ericblade/quagga2")).default;
+
+    await new Promise<void>((resolve, reject) => {
+      Quagga.init(
+        {
+          inputStream: {
+            type: "LiveStream",
+            target: viewfinderRef.current!,
+            constraints: {
+              facingMode: "environment",
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+            },
+          },
+          decoder: {
+            readers: ["ean_reader"],
+          },
+          locate: true,
+        },
+        (err: unknown) => {
+          if (err) reject(err);
+          else resolve();
+        },
+      );
+    });
+
+    Quagga.start();
+
+    Quagga.onDetected((result: { codeResult?: { code?: string | null } }) => {
+      const code = result?.codeResult?.code;
+      if (!code || isProcessingRef.current) return;
+      if (code.length !== 13) return;
+      isProcessingRef.current = true;
+      Quagga.offDetected();
+      Quagga.stop();
+      lookupIsbnRef.current(code);
+    });
+  }, []);
+
+  const lookupIsbn = useCallback(async (detectedIsbn: string): Promise<void> => {
     setPhase("loading");
     setIsbn(detectedIsbn);
     try {
@@ -82,87 +123,14 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
     }
   }, []);
 
-  /** Confirme l'ajout du manga/tome */
-  const handleConfirm = useCallback(() => {
-    if (!topResult) return;
+  // Keep ref in sync so initQuagga always calls the latest lookupIsbn
+  lookupIsbnRef.current = lookupIsbn;
 
-    const alreadyOwned = ownedMalIds.has(topResult.mal_id);
-
-    if (alreadyOwned) {
-      // Manga already in collection — add volume if we have a number
-      if (volumeNumber != null) {
-        onAddVolume(topResult.mal_id, volumeNumber);
-      }
-      // Save edition cover if available
-      if (editionCoverImage) {
-        onSetEditionCover(topResult.mal_id, editionCoverImage);
-      }
-    } else {
-      // New manga — pass volume + edition cover directly with onAdd
-      onAdd(topResult, {
-        volume: volumeNumber ?? undefined,
-        editionCoverImage: editionCoverImage ?? undefined,
-      });
-    }
-
-    // Go back to scanning for next barcode
-    startScanner();
-  }, [topResult, volumeNumber, editionCoverImage, ownedMalIds, onAdd, onAddVolume, onSetEditionCover]);
-
-  const startScanner = useCallback(async () => {
+  const goToScanning = useCallback(async () => {
+    resetState();
     setPhase("scanning");
-    setResults([]);
-    setTopResult(null);
-    setVolumeNumber(null);
-    setEditionCoverImage(null);
-    setGoogleTitle("");
-    setErrorMsg("");
-    isProcessingRef.current = false;
-
-    // Wait for DOM to render the viewfinder
-    await new Promise((r) => setTimeout(r, 100));
-
-    if (!viewfinderRef.current) return;
-
     try {
-      const Quagga = (await import("@ericblade/quagga2")).default;
-
-      await new Promise<void>((resolve, reject) => {
-        Quagga.init(
-          {
-            inputStream: {
-              type: "LiveStream",
-              target: viewfinderRef.current!,
-              constraints: {
-                facingMode: "environment",
-                width: { ideal: 1280 },
-                height: { ideal: 720 },
-              },
-            },
-            decoder: {
-              readers: ["ean_reader"],
-            },
-            locate: true,
-          },
-          (err: unknown) => {
-            if (err) reject(err);
-            else resolve();
-          },
-        );
-      });
-
-      Quagga.start();
-
-      Quagga.onDetected((result: { codeResult?: { code?: string | null } }) => {
-        const code = result?.codeResult?.code;
-        if (!code || isProcessingRef.current) return;
-        // Only accept EAN-13 (ISBN-13 starts with 978 or 979)
-        if (code.length !== 13) return;
-        isProcessingRef.current = true;
-        Quagga.offDetected();
-        Quagga.stop();
-        lookupIsbn(code);
-      });
+      await initQuagga();
     } catch (err) {
       const msg =
         err instanceof DOMException && err.name === "NotAllowedError"
@@ -171,7 +139,15 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
       setErrorMsg(msg);
       setPhase("error");
     }
-  }, [lookupIsbn]);
+  }, [resetState, initQuagga]);
+
+  const closeDialog = useCallback(() => {
+    stopQuagga();
+    setOpen(false);
+    dialogRef.current?.close();
+    setPhase("scanning");
+    resetState();
+  }, [stopQuagga, resetState]);
 
   const openDialog = useCallback(() => {
     setOpen(true);
@@ -181,9 +157,9 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
   // Start scanner when dialog opens
   useEffect(() => {
     if (open) {
-      startScanner();
+      goToScanning();
     }
-  }, [open, startScanner]);
+  }, [open, goToScanning]);
 
   // Handle native cancel (Escape)
   useEffect(() => {
@@ -193,22 +169,39 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
       stopQuagga();
       setOpen(false);
       setPhase("scanning");
-      setResults([]);
-      setTopResult(null);
-      setVolumeNumber(null);
-      setEditionCoverImage(null);
-      setGoogleTitle("");
-      setErrorMsg("");
-      isProcessingRef.current = false;
+      resetState();
     };
     dialog.addEventListener("cancel", handleCancel);
     return () => dialog.removeEventListener("cancel", handleCancel);
-  }, [stopQuagga]);
+  }, [stopQuagga, resetState]);
 
   // Check if the volume is already owned
   const isVolumeAlreadyOwned = topResult && volumeNumber != null
     ? mangas.find((m) => m.malId === topResult.mal_id)?.ownedVolumesMap.includes(volumeNumber) ?? false
     : false;
+
+  /** Confirme l'ajout du manga/tome */
+  const handleConfirm = () => {
+    if (!topResult) return;
+
+    const alreadyOwned = ownedMalIds.has(topResult.mal_id);
+
+    if (alreadyOwned) {
+      if (volumeNumber != null) {
+        onAddVolume(topResult.mal_id, volumeNumber);
+      }
+      if (editionCoverImage) {
+        onSetEditionCover(topResult.mal_id, editionCoverImage);
+      }
+    } else {
+      onAdd(topResult, {
+        volume: volumeNumber ?? undefined,
+        editionCoverImage: editionCoverImage ?? undefined,
+      });
+    }
+
+    goToScanning();
+  };
 
   return (
     <>
@@ -233,7 +226,7 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
                 {phase === "scanning" && "Scanner un code-barres"}
                 {phase === "loading" && "Recherche en cours…"}
                 {phase === "confirm" && "Confirmer l'ajout"}
-                {phase === "results" && `Tous les résultats`}
+                {phase === "results" && "Tous les résultats"}
                 {phase === "error" && "Erreur"}
               </h2>
               <button
@@ -361,7 +354,7 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
                         Voir tous les résultats
                       </button>
                       <button
-                        onClick={startScanner}
+                        onClick={goToScanning}
                         className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
                       >
                         <ScanBarcode className="h-4 w-4" aria-hidden="true" />
@@ -384,7 +377,7 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
                       Retour
                     </button>
                     <button
-                      onClick={startScanner}
+                      onClick={goToScanning}
                       className="flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"
                     >
                       <ScanBarcode className="h-4 w-4" aria-hidden="true" />
@@ -400,7 +393,7 @@ export function ScanMangaDialog({ ownedMalIds, onAdd, onAddVolume, onSetEditionC
                   <p className="text-sm text-muted-foreground text-center">{errorMsg}</p>
                   <div className="flex gap-2">
                     <button
-                      onClick={startScanner}
+                      onClick={goToScanning}
                       className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer"
                     >
                       <RotateCcw className="h-4 w-4" aria-hidden="true" />
