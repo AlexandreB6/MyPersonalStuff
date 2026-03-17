@@ -100,6 +100,15 @@ export function MangaClient({ initialMangas }: Props) {
     [apiCall],
   );
 
+  /** Supprimer un manga */
+  const removeManga = useCallback(
+    (malId: number) => {
+      setMangas((prev) => prev.filter((m) => m.malId !== malId));
+      apiCall("DELETE", { malId });
+    },
+    [apiCall],
+  );
+
   const totalVolumes = mangas.reduce((sum, m) => sum + m.ownedVolumesMap.length, 0);
 
   return (
@@ -164,7 +173,7 @@ export function MangaClient({ initialMangas }: Props) {
       {/* Grille */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {filtered.map((manga) => (
-          <MangaCard key={manga.malId} manga={manga} />
+          <MangaCard key={manga.malId} manga={manga} onRemove={() => removeManga(manga.malId)} />
         ))}
       </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Star, BookOpen } from "lucide-react";
+import { Star, BookOpen, Trash2 } from "lucide-react";
 import { mangaSlugify } from "@/lib/jikan";
 
 /** Manga tel que stocké en DB, avec dates sérialisées en ISO string */
@@ -27,10 +27,11 @@ export interface MangaItem {
 
 interface MangaCardProps {
   manga: MangaItem;
+  onRemove: () => void;
 }
 
 /** Carte d'un manga dans la collection — couverture, infos, progression. */
-export function MangaCard({ manga }: MangaCardProps) {
+export function MangaCard({ manga, onRemove }: MangaCardProps) {
   const statusLabel = manga.status === "Finished" ? "Terminé" : manga.status === "Publishing" ? "En cours" : manga.status;
   const ownedCount = manga.ownedVolumesMap.length;
   const slug = mangaSlugify(manga.title, manga.malId);
@@ -71,6 +72,18 @@ export function MangaCard({ manga }: MangaCardProps) {
             {manga.score.toFixed(1)}
           </span>
         )}
+        {/* Bouton supprimer */}
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onRemove();
+          }}
+          aria-label={`Supprimer ${manga.title}`}
+          className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-md bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-destructive/80 hover:text-white transition-all cursor-pointer"
+        >
+          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+        </button>
         {/* Barre de progression */}
         {manga.volumes != null && manga.volumes > 0 && (
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40">
