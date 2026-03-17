@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
-import { LayoutGrid, Film, Paintbrush } from "lucide-react";
+import { LayoutGrid, Film, Paintbrush, BookOpen } from "lucide-react";
 import { MobileNav } from "@/components/MobileNav";
 
 /** Police principale — Plus Jakarta Sans via Google Fonts */
@@ -52,6 +52,10 @@ export default function RootLayout({
               <Link href="/peinture" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                 <Paintbrush className="w-3.5 h-3.5" aria-hidden="true" />
                 Peinture
+              </Link>
+              <Link href="/manga" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+                <BookOpen className="w-3.5 h-3.5" aria-hidden="true" />
+                Manga
               </Link>
             </nav>
             <MobileNav />

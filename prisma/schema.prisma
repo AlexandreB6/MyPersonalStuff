@@ -20,6 +20,27 @@ model OwnedPaint {
   updatedAt DateTime @updatedAt
 }
 
+/// Manga suivi dans la collection personnelle
+model Manga {
+  id             Int      @id @default(autoincrement())
+  malId          Int      @unique /// Identifiant MyAnimeList
+  title          String
+  titleJapanese  String?
+  coverImage     String?  /// URL image couverture
+  author         String?
+  volumes        Int?     /// Nb volumes total (null si en cours)
+  chapters       Int?     /// Nb chapitres total
+  synopsis       String?
+  genres         String?  /// Genres séparés par virgule
+  demographic    String?  /// Démographie : "Shounen", "Seinen", "Shoujo", "Josei"
+  score          Float?   /// Score MAL
+  status         String?  /// "Publishing", "Finished", etc.
+  ownedVolumesMap String  @default("[]") /// JSON array des numéros de volumes possédés, ex: "[1,2,3,5]"
+  notes          String?  /// Notes perso
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 /// Film suivi dans la collection personnelle
 model Movie {
   id          Int       @id @default(autoincrement())
