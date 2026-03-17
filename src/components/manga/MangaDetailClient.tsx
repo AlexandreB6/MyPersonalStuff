@@ -310,6 +310,9 @@ export function MangaDetailClient({ manga: initial }: Props) {
                     alt={cover.title}
                     className="h-full w-full object-cover"
                     loading="lazy"
+                    onError={(e) => {
+                      (e.target as HTMLElement).closest("button")!.style.display = "none";
+                    }}
                   />
                   {cover.publisher && (
                     <span className="absolute bottom-0 left-0 right-0 bg-black/70 px-1.5 py-1 text-[9px] text-white/80 truncate">

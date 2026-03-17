@@ -37,10 +37,8 @@ export async function GET(request: NextRequest) {
       title: item.volumeInfo.title,
       authors: item.volumeInfo.authors?.join(", ") ?? null,
       publisher: item.volumeInfo.publisher ?? null,
-      // Use zoom=1 for better quality and remove curl effect
       coverUrl: item.volumeInfo.imageLinks!.thumbnail!
-        .replace("&edge=curl", "")
-        .replace("zoom=1", "zoom=2"),
+        .replace("&edge=curl", ""),
     }));
 
   return NextResponse.json(covers);
