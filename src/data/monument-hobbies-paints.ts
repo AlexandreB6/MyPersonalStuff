@@ -17,209 +17,228 @@ function p(name: string, hex: string, type: string, metallic?: boolean): Paint {
 }
 
 export const MONUMENT_HOBBIES_PAINTS: Paint[] = [
-  // ── Core Pro Acryl (001-075) ────────────────────────────
-  p("Titanium White", "#F5F5F0", "Standard"),
-  p("Ivory", "#FFFFF0", "Standard"),
-  p("Warm White", "#FAF0E6", "Standard"),
-  p("Cool White", "#E8EDF0", "Standard"),
-  p("Yellow", "#FFD700", "Standard"),
-  p("Golden Yellow", "#FFC107", "Standard"),
-  p("Orange", "#FF8C00", "Standard"),
-  p("Bright Orange", "#FF6600", "Standard"),
-  p("Red", "#CC0000", "Standard"),
-  p("Bright Red", "#EE0000", "Standard"),
-  p("Dark Red", "#8B0000", "Standard"),
-  p("Magenta", "#CC0066", "Standard"),
-  p("Pink", "#FF69B4", "Standard"),
-  p("Pale Rose", "#FFB6C1", "Standard"),
-  p("Violet", "#7B2D8E", "Standard"),
-  p("Purple", "#6A0DAD", "Standard"),
-  p("Dark Violet", "#4B0082", "Standard"),
-  p("Ultramarine Blue", "#1E3F8B", "Standard"),
-  p("Blue", "#2563EB", "Standard"),
-  p("Bright Blue", "#0077CC", "Standard"),
-  p("Dark Blue", "#001F5C", "Standard"),
-  p("Navy", "#000080", "Standard"),
-  p("Sky Blue", "#87CEEB", "Standard"),
-  p("Turquoise", "#30D5C8", "Standard"),
-  p("Teal", "#008080", "Standard"),
-  p("Dark Teal", "#004D4D", "Standard"),
-  p("Green", "#228B22", "Standard"),
-  p("Bright Green", "#00CC44", "Standard"),
-  p("Dark Green", "#004D00", "Standard"),
-  p("Olive Green", "#556B2F", "Standard"),
-  p("Yellow Green", "#9ACD32", "Standard"),
-  p("Jade Green", "#00A86B", "Standard"),
-  p("Forest Green", "#0B6623", "Standard"),
-  p("Brown", "#8B4513", "Standard"),
-  p("Dark Brown", "#3B1E08", "Standard"),
-  p("Leather Brown", "#7B5B3A", "Standard"),
-  p("Tan", "#D2B48C", "Standard"),
-  p("Khaki", "#C3B091", "Standard"),
-  p("Sand", "#C2B280", "Standard"),
-  p("Flesh", "#E8B88A", "Standard"),
-  p("Dark Flesh", "#A0694B", "Standard"),
-  p("Pale Flesh", "#FFDAB9", "Standard"),
-  p("Warm Grey", "#808078", "Standard"),
-  p("Neutral Grey", "#808080", "Standard"),
-  p("Cool Grey", "#7A8B8B", "Standard"),
-  p("Dark Warm Grey", "#504840", "Standard"),
-  p("Dark Neutral Grey", "#484848", "Standard"),
-  p("Dark Cool Grey", "#3D4A4A", "Standard"),
-  p("Coal Black", "#1A1A1A", "Standard"),
-  p("Dark Umber", "#2C1608", "Standard"),
+  // ── Core Pro Acryl — Bold ─────────────────────────────
+  p("Bold Titanium White", "#FFFFFF", "Bold"),                 // 001
 
-  // ── Bold ────────────────────────────────────────────────
-  p("Bold Pyrrole Red", "#E62020", "Bold"),
-  p("Bold Magenta", "#E0115F", "Bold"),
-  p("Bold Bright Orange", "#FF5F15", "Bold"),
-  p("Bold Yellow", "#FFE000", "Bold"),
-  p("Bold Bright Green", "#00E639", "Bold"),
-  p("Bold Blue", "#0055FF", "Bold"),
-  p("Bold Cyan", "#00CCFF", "Bold"),
-  p("Bold Violet", "#8B00FF", "Bold"),
-  p("Bold Titanium White", "#FFFFFF", "Bold"),
+  // ── Core Pro Acryl — Standard (002–075) ────────────────
+  p("Coal Black", "#1A1A1A", "Standard"),                      // 002
+  p("Green", "#228B22", "Standard"),                           // 004
+  p("Blue", "#2563EB", "Standard"),                            // 005
+  p("Golden Yellow", "#FFC107", "Standard"),                   // 006
+  p("Orange", "#FF8C00", "Standard"),                          // 007
+  p("Burnt Red", "#8B2500", "Standard"),                       // 008
+  p("Mahogany", "#6B3226", "Standard"),                        // 009
+  p("Purple", "#6A0DAD", "Standard"),                          // 010
+  p("Magenta", "#CC0066", "Standard"),                         // 011
+  p("Sky Blue", "#87CEEB", "Standard"),                        // 012
+  p("Faded Ultramarine", "#6673AB", "Standard"),               // 013
+  p("Dark Grey Blue", "#3B4D5E", "Standard"),                  // 014
+  p("Bright Warm Grey", "#A69E90", "Standard"),                // 015
+  p("Dark Warm Grey", "#504840", "Standard"),                  // 016
+  p("Golden Brown", "#996515", "Standard"),                    // 017
+  p("Light Umber", "#937A62", "Standard"),                     // 018
+  p("Dark Umber", "#2C1608", "Standard"),                      // 019
+  p("Camo Green", "#5C6B3C", "Standard"),                      // 020
+  p("Jade", "#00A86B", "Standard"),                            // 021
+  p("Bright Ivory", "#FFFFF0", "Standard"),                    // 022
+  p("Ivory", "#EEEED2", "Standard"),                           // 023
+  p("Tan Flesh", "#D2A87A", "Standard"),                       // 024
+  p("Dark Blue", "#001F5C", "Standard"),                       // 034
+  p("Dark Purple", "#3C0A6E", "Standard"),                     // 035
+  p("Dark Camo Green", "#3B4A28", "Standard"),                 // 036
+  p("Burnt Orange", "#CC5500", "Standard"),                    // 037
+  p("Yellow Ochre", "#CC8800", "Standard"),                    // 038
+  p("Bright Yellow Green", "#B5CC18", "Standard"),             // 039
+  p("Black Brown", "#2A1F14", "Standard"),                     // 040
+  p("Olive Flesh", "#C4A87A", "Standard"),                     // 041
+  p("Shadow Flesh", "#8C5E3C", "Standard"),                    // 042
+  p("Pale Pink", "#F5C4C4", "Standard"),                       // 043
+  p("Dark Neutral Grey", "#484848", "Standard"),               // 044
+  p("Bright Neutral Grey", "#A0A0A0", "Standard"),             // 045
+  p("Turquoise", "#30D5C8", "Standard"),                       // 054
+  p("Grey Blue", "#6B8BA4", "Standard"),                       // 055
+  p("Blue Black", "#1A1A2E", "Standard"),                      // 056
+  p("Black Green", "#1A2E1A", "Standard"),                     // 057
+  p("Bright Pale Green", "#A8E6A0", "Standard"),               // 058
+  p("Burnt Sienna", "#A0522D", "Standard"),                    // 059
+  p("Pale Yellow", "#FAFAA0", "Standard"),                     // 060
+  p("Khaki", "#C3B091", "Standard"),                           // 061
+  p("Dark Golden Brown", "#6B4210", "Standard"),               // 062
+  p("Faded Plum", "#8E6B8A", "Standard"),                      // 063
+  p("Yellow Green", "#9ACD32", "Standard"),                    // 065
+  p("Faded Green", "#7DA07D", "Standard"),                     // 066
+  p("Bright Jade", "#00D68F", "Standard"),                     // 067
+  p("Dark Flesh", "#7A4A2E", "Standard"),                      // 068
+  p("Burgundy", "#6D0020", "Standard"),                        // 069
+  p("Plum", "#6E2068", "Standard"),                            // 070
+  p("Pink", "#FF69B4", "Standard"),                            // 071
+  p("Warm Yellow", "#FFD54F", "Standard"),                     // 072
+  p("Warm Flesh", "#E0A87A", "Standard"),                      // 073
+  p("Warm Grey", "#8A827A", "Standard"),                       // 074
+  p("Neutral Grey", "#808080", "Standard"),                    // 075
 
-  // ── Transparent ─────────────────────────────────────────
-  p("Transparent Red", "#CC000088", "Transparent"),
-  p("Transparent Blue", "#0044CC88", "Transparent"),
-  p("Transparent Yellow", "#FFD70088", "Transparent"),
-  p("Transparent Green", "#00880088", "Transparent"),
-  p("Transparent Magenta", "#CC006688", "Transparent"),
-  p("Transparent Orange", "#FF660088", "Transparent"),
-  p("Transparent Violet", "#6A0DAD88", "Transparent"),
+  // ── Core Pro Acryl — Bold ─────────────────────────────
+  p("Bold Pyrrole Red", "#E62020", "Bold"),                    // 003
 
-  // ── Metallic ────────────────────────────────────────────
-  p("Rich Gold", "#CFB53B", "Metallic", true),
-  p("Pale Gold", "#EEE8AA", "Metallic", true),
-  p("Rose Gold", "#B76E79", "Metallic", true),
-  p("Bronze", "#CD7F32", "Metallic", true),
-  p("Copper", "#B87333", "Metallic", true),
-  p("Silver", "#C0C0C0", "Metallic", true),
-  p("Dark Silver", "#808080", "Metallic", true),
-  p("Gunmetal", "#536267", "Metallic", true),
+  // ── Core Pro Acryl — Metallic ─────────────────────────
+  p("Silver", "#C0C0C0", "Metallic", true),                   // 025
+  p("Light Bronze", "#C9A86C", "Metallic", true),              // 026
+  p("Copper", "#B87333", "Metallic", true),                    // 027
+  p("Rich Gold", "#CFB53B", "Metallic", true),                 // 028
+  p("White Gold", "#E8E0C8", "Metallic", true),                // 029
+  p("Dark Silver", "#707070", "Metallic", true),               // 030
+  p("Bright Gold", "#FFD700", "Metallic", true),               // 031
+  p("Bronze", "#CD7F32", "Metallic", true),                    // 032
 
-  // ── Signature Series ────────────────────────────────────
-  // Vince Venturella
-  p("Vince's Warm Black", "#1A1210", "Signature"),
-  p("Vince's Warm White", "#F5EDE0", "Signature"),
-  p("Vince's Pink", "#E75480", "Signature"),
-  p("Vince's Magenta Red", "#CC2244", "Signature"),
-  p("Vince's Sanguine Highlight", "#E86850", "Signature"),
-  p("Vince's Turquoise", "#40E0D0", "Signature"),
-  // Ninjon
-  p("Ninjon's Peach", "#FFB07C", "Signature"),
-  p("Ninjon's Highlight Peach", "#FFDAB9", "Signature"),
-  p("Ninjon's Salmon", "#FA8072", "Signature"),
-  p("Ninjon's Bright Purple", "#9B30FF", "Signature"),
-  p("Ninjon's Sky Blue", "#87CEFA", "Signature"),
-  p("Ninjon's Pastel Green", "#98FB98", "Signature"),
-  // Ben Komets
-  p("Ben's Moonstone", "#D4D7DC", "Signature"),
-  p("Ben's Green Earth", "#4A6741", "Signature"),
-  p("Ben's Ochre", "#CC7722", "Signature"),
-  p("Ben's Burnt Sienna", "#E97451", "Signature"),
-  p("Ben's Raw Umber", "#6B4423", "Signature"),
-  p("Ben's Cobalt Blue", "#0047AB", "Signature"),
-  // Matt Cexwish
-  p("Matt's Bright Magenta", "#FF0090", "Signature"),
-  p("Matt's Deep Green", "#003820", "Signature"),
-  p("Matt's Rusty Red", "#DA2C38", "Signature"),
-  p("Matt's Warm Ochre", "#D4873F", "Signature"),
-  // Flameon
-  p("Flameon's Coral", "#FF6F61", "Signature"),
-  p("Flameon's Teal", "#2E8B8B", "Signature"),
-  p("Flameon's Lavender", "#B57EDC", "Signature"),
-  p("Flameon's Hot Pink", "#FF1493", "Signature"),
-  // Rogue Hobbies
-  p("Rogue's Orange Brown", "#A0522D", "Signature"),
-  p("Rogue's Red Brown", "#7C2D12", "Signature"),
-  p("Rogue's Pale Yellow", "#FAFAD2", "Signature"),
-  // Adepticon
-  p("Adepticon Blue", "#3A7CA5", "Signature"),
-  p("Adepticon Gold", "#DAA520", "Signature", true),
+  // ── Core Pro Acryl — Medium ───────────────────────────
+  p("Metallic Medium", "#E8E8E8", "Medium"),                   // 033
 
-  // ── Fluorescent ─────────────────────────────────────────
+  // ── Core Pro Acryl — Transparent ──────────────────────
+  p("Transparent Blue", "#0044CC", "Transparent"),             // 046
+  p("Transparent Red", "#CC0000", "Transparent"),              // 047
+  p("Transparent Green", "#008800", "Transparent"),            // 048
+  p("Transparent Yellow", "#FFD700", "Transparent"),           // 049
+  p("Transparent Orange", "#FF6600", "Transparent"),           // 050
+  p("Transparent Purple", "#6A0DAD", "Transparent"),           // 051
+  p("Transparent Brown", "#6B3A1F", "Transparent"),            // 052
+  p("Transparent Black", "#1A1A1A", "Transparent"),            // 053
+  p("Transparent White", "#F5F5F5", "Transparent"),            // 064
+
+  // ── Washes ────────────────────────────────────────────
+  p("Black Wash", "#1A1008", "Wash"),                          // 200
+  p("Brown Wash", "#4A3728", "Wash"),                          // 201
+  p("Flesh Wash", "#8B6B4A", "Wash"),                          // 202
+
+  // ── Signature Series ──────────────────────────────────
+  // Vince Venturella (S01–S06)
+  p("Vince Venturella Dark Jade", "#1A6B4A", "Signature"),
+  p("Vince Venturella Payne's Grey", "#536878", "Signature"),
+  p("Vince Venturella Royal Purple", "#7851A9", "Signature"),
+  p("Vince Venturella White Blue", "#D6E4F0", "Signature"),
+  p("Vince Venturella Beige Red", "#B07060", "Signature"),
+  p("Vince Venturella Dark Yellow Green", "#5A6B20", "Signature"),
+  // Ninjon (S07–S12)
+  p("Ninjon Dark Ivory", "#BEB8A0", "Signature"),
+  p("Ninjon Dark Warm Flesh", "#8B5E3C", "Signature"),
+  p("Ninjon Warm Brown", "#7A5230", "Signature"),
+  p("Ninjon Dark Magenta", "#8B0060", "Signature"),
+  p("Ninjon Dark Plum", "#4A1042", "Signature"),
+  p("Ninjon Red Grey", "#7A6060", "Signature"),
+  // Ben Komets (S13–S18)
+  p("Ben Komets Dark Sea Blue", "#1A4060", "Signature"),
+  p("Ben Komets Petroleum Brown", "#4A3A28", "Signature"),
+  p("Ben Komets Dark Burgundy", "#4A0018", "Signature"),
+  p("Ben Komets Green Oxide", "#4A6B3A", "Signature"),
+  p("Ben Komets Advanced Flesh Tone", "#C89878", "Signature"),
+  p("Ben Komets Heavy Warm White", "#F5ECD8", "Signature"),
+  // Matt Cexwish (S19–S24)
+  p("Matt Cexwish Dark Crimson", "#7B0020", "Signature"),
+  p("Matt Cexwish Dark Emerald", "#004D30", "Signature"),
+  p("Matt Cexwish Heavy Titanium White", "#FAFAFA", "Signature"),
+  p("Matt Cexwish Brown Grey", "#6B5E54", "Signature"),
+  p("Matt Cexwish Bone", "#E3D5B8", "Signature"),
+  p("Matt Cexwish Dark Bronze", "#5A4A30", "Signature", true),
+  // Flameon (S25–S30)
+  p("Flameon Dark Green Brown", "#3A3A1A", "Signature"),
+  p("Flameon Dark Orange Brown", "#6B3A1A", "Signature"),
+  p("Flameon Orange Brown", "#9A5A28", "Signature"),
+  p("Flameon Caramel Brown", "#A06830", "Signature"),
+  p("Flameon Bright Yellow Ochre", "#D4A820", "Signature"),
+  p("Flameon Bright Pale Yellow", "#F5E88A", "Signature"),
+  // Rogue Hobbies (S31–S36)
+  p("Rogue Hobbies Orange Red", "#E04020", "Signature"),
+  p("Rogue Hobbies Dark Hot Pink", "#C0206A", "Signature"),
+  p("Rogue Hobbies Bright Green", "#00CC44", "Signature"),
+  p("Rogue Hobbies Dark Turquoise", "#006B60", "Signature"),
+  p("Rogue Hobbies Ultramarine", "#1E3F8B", "Signature"),
+  p("Rogue Hobbies Bismuth Yellow", "#E8D020", "Signature"),
+  // Adepticon (S37–S42)
+  p("Adepticon Red Oxide", "#6D2B15", "Signature"),
+  p("Adepticon Orange Oxide", "#A85A28", "Signature"),
+  p("Adepticon Satin Black", "#0A0A0A", "Signature"),
+  p("Adepticon Drab Brown", "#5A4A30", "Signature"),
+  p("Adepticon Bright Shadow Flesh", "#B89070", "Signature"),
+  p("Adepticon Magnesium", "#B8B8B0", "Signature", true),
+  // NOVA (S49)
+  p("NOVA Orange", "#FF6A00", "Signature"),
+
+  // ── Fluorescent ───────────────────────────────────────
+  p("Fluorescent Red", "#FF1A1A", "Fluorescent"),
+  p("Fluorescent Orange", "#FF5F1F", "Fluorescent"),
   p("Fluorescent Yellow", "#DFFF00", "Fluorescent"),
   p("Fluorescent Green", "#39FF14", "Fluorescent"),
-  p("Fluorescent Orange", "#FF5F1F", "Fluorescent"),
+  p("Fluorescent Purple", "#BF00FF", "Fluorescent"),
   p("Fluorescent Pink", "#FF1493", "Fluorescent"),
-  p("Fluorescent Magenta", "#FF00FF", "Fluorescent"),
-  p("Fluorescent Blue", "#00F7FF", "Fluorescent"),
 
-  // ── AMP Colors ──────────────────────────────────────────
-  p("AMP Dark Flesh", "#6B3A2A", "AMP"),
-  p("AMP Warm Flesh", "#C68E6A", "AMP"),
-  p("AMP Pale Flesh", "#F5D5B8", "AMP"),
-  p("AMP Yellow Ochre", "#CC8800", "AMP"),
-  p("AMP Burnt Orange", "#CC5500", "AMP"),
-  p("AMP Crimson", "#990033", "AMP"),
-  p("AMP Dark Magenta", "#8B008B", "AMP"),
-  p("AMP Deep Blue", "#003366", "AMP"),
-  p("AMP Bright Blue", "#0088CC", "AMP"),
-  p("AMP Phthalo Green", "#006B3C", "AMP"),
-  p("AMP Bright Green", "#44BB44", "AMP"),
-  p("AMP Grey Green", "#5F7A61", "AMP"),
-  p("AMP Dark Earth", "#3B2F1E", "AMP"),
-  p("AMP Warm Brown", "#80522D", "AMP"),
-  p("AMP Buff", "#DEB887", "AMP"),
+  // ── AMP Colors ────────────────────────────────────────
+  p("Cool Grey", "#7A8B8B", "AMP"),                           // AMP 002
+  p("Black Red", "#3A0A0A", "AMP"),                            // AMP 004
+  p("Dark Navy Blue", "#0A1A3A", "AMP"),                       // AMP 005
+  p("Beige Grey", "#B0A898", "AMP"),                           // AMP 006
+  p("Orange Yellow", "#F0A820", "AMP"),                        // AMP 007
+  p("Peach Flesh", "#F5C0A0", "AMP"),                          // AMP 008
+  p("Bright Green Blue", "#00A0A0", "AMP"),                    // AMP 009
+  p("Steel", "#6A6A72", "AMP", true),                          // AMP 010
+  p("Slate Grey", "#6A7080", "AMP"),                           // AMP 013
+  p("Red Orange", "#E04020", "AMP"),                           // AMP 017
+  p("Burnt Umber", "#3B2314", "AMP"),                          // AMP 018
+  p("Green Brown", "#4A4A1A", "AMP"),                          // AMP 020
+  p("Bright Brown Grey", "#9A8A78", "AMP"),                    // AMP 021
+  p("Grey Green", "#5F7A61", "AMP"),                           // AMP 022
 
-  // ── Washes ──────────────────────────────────────────────
-  p("Dark Wash", "#1A1008", "Wash"),
-  p("Umber Wash", "#4A3728", "Wash"),
-  p("Sepia Wash", "#704214", "Wash"),
-  p("AMP Dark Wash", "#100A04", "Wash"),
-  p("AMP Red Wash", "#6B1010", "Wash"),
-  p("AMP Blue Wash", "#0A1A3A", "Wash"),
-  p("AMP Green Wash", "#0A2A0A", "Wash"),
+  // ── AMP Washes ────────────────────────────────────────
+  p("Magenta Wash", "#6B1040", "Wash"),                        // AMP 011
+  p("Petroleum Brown Wash", "#3A2A18", "Wash"),                // AMP 012
+  p("Brown Grey Wash", "#4A4038", "Wash"),                     // AMP 023
+  p("Payne's Grey Wash", "#3A4858", "Wash"),                   // AMP 024
 
-  // ── Expert Acrylics (Tri Art) ───────────────────────────
-  p("Expert Cadmium Yellow", "#FFF200", "Expert"),
-  p("Expert Cadmium Orange", "#ED872D", "Expert"),
-  p("Expert Cadmium Red", "#E30022", "Expert"),
-  p("Expert Alizarin Crimson", "#E32636", "Expert"),
-  p("Expert Quinacridone Magenta", "#A50B5E", "Expert"),
-  p("Expert Dioxazine Purple", "#4B0076", "Expert"),
-  p("Expert Ultramarine Blue", "#120A8F", "Expert"),
-  p("Expert Phthalo Blue", "#000F89", "Expert"),
-  p("Expert Cerulean Blue", "#2A52BE", "Expert"),
-  p("Expert Phthalo Green BS", "#006B3C", "Expert"),
-  p("Expert Phthalo Green YS", "#00A550", "Expert"),
-  p("Expert Chromium Oxide Green", "#4C7A4C", "Expert"),
-  p("Expert Yellow Oxide", "#E09714", "Expert"),
-  p("Expert Red Oxide", "#6D2B15", "Expert"),
-  p("Expert Burnt Umber", "#3B2314", "Expert"),
-  p("Expert Raw Umber", "#6B5B3C", "Expert"),
+  // ── Expert Acrylics ───────────────────────────────────
+  p("Expert Titanium White", "#F5F5F0", "Expert"),             // Expert 001
+  p("Expert Carbon Black", "#0A0A0A", "Expert"),               // Expert 002
+  p("Expert Pyrrole Red", "#E62020", "Expert"),                // Expert 003
+  p("Expert Permanent Green Light", "#3CB371", "Expert"),      // Expert 004
+  p("Expert Prussian Blue", "#003153", "Expert"),              // Expert 005
+  p("Expert Pyrrole Orange", "#E86020", "Expert"),             // Expert 006
+  p("Expert Burnt Umber", "#3B2314", "Expert"),                // Expert 007
+  p("Expert Dioxazine Violet", "#4B0076", "Expert"),           // Expert 008
+  p("Expert Sap Green", "#507D2A", "Expert"),                  // Expert 009
+  p("Expert Burnt Sienna", "#A0522D", "Expert"),               // Expert 010
+  p("Expert Nickel Azo Yellow", "#D4A020", "Expert"),          // Expert 011
+  p("Expert Sepia", "#704214", "Expert"),                      // Expert 012
+  p("Expert Payne's Grey", "#536878", "Expert"),               // Expert 013
+  p("Expert Primary Cyan", "#00B7EB", "Expert"),               // Expert 014
+  p("Expert Primary Magenta", "#CC0066", "Expert"),            // Expert 015
+  p("Expert Primary Yellow", "#FFE000", "Expert"),             // Expert 016
 
-  // ── Primers ─────────────────────────────────────────────
-  p("White Primer", "#F0F0F0", "Primer"),
-  p("Grey Primer", "#808080", "Primer"),
-  p("Black Primer", "#1A1A1A", "Primer"),
-  p("Bone Primer", "#E3D5B0", "Primer"),
-  p("Green Primer", "#2E5A2E", "Primer"),
-  p("Blue Primer", "#1A3A5C", "Primer"),
-  p("Red Primer", "#8B1A1A", "Primer"),
-  p("Brown Primer", "#4A2A12", "Primer"),
-  p("Tan Primer", "#C8A882", "Primer"),
-  p("Pink Primer", "#D4738A", "Primer"),
+  // ── Primers ───────────────────────────────────────────
+  p("Black Primer", "#1A1A1A", "Primer"),                      // PRIME 002
+  p("White Primer", "#F0F0F0", "Primer"),                      // PRIME 003
+  p("Dark Neutral Grey Primer", "#484848", "Primer"),          // PRIME 005
+  p("Dark Camo Green Primer", "#3B4A28", "Primer"),            // PRIME 007
+  p("Black Brown Primer", "#2A1F14", "Primer"),                // PRIME 011
+  p("Brush-On White Primer", "#F5F5F5", "Primer"),             // PRIME 013
+  p("Brush-On Black Primer", "#121212", "Primer"),             // PRIME 017
+  p("Red Oxide Primer", "#6D2B15", "Primer"),                  // PRIME 019
+  p("Dark Purple Primer", "#3C0A6E", "Primer"),                // PRIME 023
+  p("Taupe Primer", "#8B7D6B", "Primer"),                      // PRIME 029
 
-  // ── Médiums & Vernis ────────────────────────────────────
+  // ── Médiums & Vernis ──────────────────────────────────
   p("Glaze & Wash Medium", "#F0F0F0", "Medium"),
   p("Matte Varnish", "#F0F0F0", "Medium"),
   p("Gloss Varnish", "#F5F5F5", "Medium"),
-  p("NEWSH Weathering Medium", "#E8E0D0", "Medium"),
+  p("NEWSH Acrylic Weathering Medium", "#E8E0D0", "Medium"),
 ];
 
 /** Types de peinture Monument Hobbies */
 export const MH_PAINT_TYPES: string[] = [
   "Standard",
   "Bold",
-  "Signature",
-  "Fluorescent",
-  "AMP",
-  "Wash",
-  "Transparent",
   "Metallic",
+  "Transparent",
+  "Wash",
+  "Fluorescent",
+  "Signature",
+  "AMP",
   "Expert",
   "Primer",
   "Medium",
@@ -229,12 +248,12 @@ export const MH_PAINT_TYPES: string[] = [
 export const MH_TYPE_COLORS: Record<string, string> = {
   Standard: "bg-blue-500/20 text-blue-400",
   Bold: "bg-orange-500/20 text-orange-400",
-  Signature: "bg-purple-500/20 text-purple-400",
-  Fluorescent: "bg-lime-500/20 text-lime-400",
-  AMP: "bg-rose-500/20 text-rose-400",
-  Wash: "bg-amber-500/20 text-amber-400",
-  Transparent: "bg-sky-500/20 text-sky-400",
   Metallic: "bg-yellow-500/20 text-yellow-400",
+  Transparent: "bg-sky-500/20 text-sky-400",
+  Wash: "bg-amber-500/20 text-amber-400",
+  Fluorescent: "bg-lime-500/20 text-lime-400",
+  Signature: "bg-purple-500/20 text-purple-400",
+  AMP: "bg-rose-500/20 text-rose-400",
   Expert: "bg-emerald-500/20 text-emerald-400",
   Primer: "bg-slate-500/20 text-slate-400",
   Medium: "bg-neutral-500/20 text-neutral-400",
