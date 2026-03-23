@@ -61,10 +61,10 @@ export function MangaCard({ manga, onRemove }: MangaCardProps) {
         )}
         {/* Badge statut */}
         {statusLabel && (
-          <span className={`absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+          <span className={`absolute top-2 left-2 rounded-full px-2 py-0.5 text-[10px] font-semibold bg-black/60 backdrop-blur-sm ${
             manga.status === "Finished"
-              ? "bg-emerald-500/20 text-emerald-300"
-              : "bg-amber-500/20 text-amber-300"
+              ? "text-emerald-300"
+              : "text-amber-300"
           }`}>
             {statusLabel}
           </span>
@@ -84,7 +84,7 @@ export function MangaCard({ manga, onRemove }: MangaCardProps) {
             setConfirmOpen(true);
           }}
           aria-label={`Supprimer ${manga.title}`}
-          className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-md bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-destructive/80 hover:text-white transition-all cursor-pointer"
+          className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-md bg-black/80 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive/80 hover:text-white transition-all cursor-pointer"
         >
           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
         </button>
