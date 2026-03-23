@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Search, Plus, X, Loader2 } from "lucide-react";
 import { MangaSearchResults } from "./MangaSearchResults";
 import type { JikanManga } from "@/lib/jikan";
@@ -20,6 +20,7 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<JikanManga[]>([]);
   const [loading, setLoading] = useState(false);
+  const [demographicFilter, setDemographicFilter] = useState<string>("all");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const openDialog = useCallback(() => {
@@ -33,7 +34,21 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
     dialogRef.current?.close();
     setQuery("");
     setResults([]);
+    setDemographicFilter("all");
   }, []);
+
+  const DEMOGRAPHIC_OPTIONS = [
+    { value: "all", label: "Tous" },
+    { value: "Shounen", label: "Shonen" },
+    { value: "Shoujo", label: "Shojo" },
+    { value: "Seinen", label: "Seinen" },
+    { value: "Josei", label: "Josei" },
+  ] as const;
+
+  const filteredResults = useMemo(() => {
+    if (demographicFilter === "all") return results;
+    return results.filter((m) => m.demographics?.[0]?.name === demographicFilter);
+  }, [results, demographicFilter]);
 
   // Recherche avec debounce
   useEffect(() => {
@@ -117,6 +132,26 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
               </div>
             </div>
 
+            {/* Filtre démographie */}
+            {results.length > 0 && !loading && (
+              <div className="flex items-center gap-1.5 px-5 pb-2">
+                {DEMOGRAPHIC_OPTIONS.map(({ value, label }) => (
+                  <button
+                    key={value}
+                    onClick={() => setDemographicFilter(value)}
+                    aria-pressed={demographicFilter === value}
+                    className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
+                      demographicFilter === value
+                        ? "bg-violet-500 text-white"
+                        : "bg-muted text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {/* Résultats */}
             <div className="flex-1 overflow-y-auto px-5 pb-5">
               {loading && (
@@ -132,8 +167,14 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
                 </p>
               )}
 
-              {!loading && results.length > 0 && (
-                <MangaSearchResults results={results} ownedMalIds={ownedMalIds} onAdd={onAdd} />
+              {!loading && results.length > 0 && filteredResults.length === 0 && (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  Aucun résultat pour ce filtre
+                </p>
+              )}
+
+              {!loading && filteredResults.length > 0 && (
+                <MangaSearchResults results={filteredResults} ownedMalIds={ownedMalIds} onAdd={onAdd} />
               )}
 
               {!loading && query.trim().length < 2 && (

@@ -18,6 +18,15 @@ const STATUS_OPTIONS = [
   { value: "Finished", label: "Terminé" },
 ] as const;
 
+/** Démographies de filtrage */
+const DEMOGRAPHIC_OPTIONS = [
+  { value: "all", label: "Tous" },
+  { value: "Shounen", label: "Shonen" },
+  { value: "Shoujo", label: "Shojo" },
+  { value: "Seinen", label: "Seinen" },
+  { value: "Josei", label: "Josei" },
+] as const;
+
 /**
  * Client component principal pour la page Manga.
  * Gère la collection, les filtres et les actions CRUD optimistes.
@@ -26,6 +35,7 @@ export function MangaClient({ initialMangas }: Props) {
   const [mangas, setMangas] = useState<MangaItem[]>(initialMangas);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [demographicFilter, setDemographicFilter] = useState<string>("all");
 
   /** IDs MAL des mangas possédés — pour le dialog d'ajout */
   const ownedMalIds = useMemo(() => new Set(mangas.map((m) => m.malId)), [mangas]);
@@ -35,16 +45,18 @@ export function MangaClient({ initialMangas }: Props) {
     const q = search.toLowerCase().trim();
     return mangas.filter((m) => {
       if (statusFilter !== "all" && m.status !== statusFilter) return false;
+      if (demographicFilter !== "all" && m.demographic !== demographicFilter) return false;
       if (q && !m.title.toLowerCase().includes(q) && !(m.author?.toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [mangas, search, statusFilter]);
+  }, [mangas, search, statusFilter, demographicFilter]);
 
-  const hasActiveFilters = search !== "" || statusFilter !== "all";
+  const hasActiveFilters = search !== "" || statusFilter !== "all" || demographicFilter !== "all";
 
   const resetFilters = useCallback(() => {
     setSearch("");
     setStatusFilter("all");
+    setDemographicFilter("all");
   }, []);
 
   /** Appel API générique */
@@ -150,6 +162,23 @@ export function MangaClient({ initialMangas }: Props) {
               className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
                 statusFilter === value
                   ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+        <div className="hidden sm:block h-5 w-px bg-border" aria-hidden="true" />
+        <div className="flex items-center gap-1.5">
+          {DEMOGRAPHIC_OPTIONS.map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => setDemographicFilter(value)}
+              aria-pressed={demographicFilter === value}
+              className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
+                demographicFilter === value
+                  ? "bg-violet-500 text-white"
                   : "bg-muted text-muted-foreground hover:text-foreground"
               }`}
             >
