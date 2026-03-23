@@ -6,7 +6,7 @@ import { Menu, X, Film, Paintbrush, BookOpen } from "lucide-react";
 
 /** Liens de navigation affichés dans le menu mobile */
 const NAV_ITEMS = [
-  { href: "/", label: "Cinema", icon: Film },
+  { href: "/cinema", label: "Cinema", icon: Film },
   { href: "/peinture", label: "Peinture", icon: Paintbrush },
   { href: "/manga", label: "Manga", icon: BookOpen },
 ];
