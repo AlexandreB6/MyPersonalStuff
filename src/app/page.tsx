@@ -128,7 +128,8 @@ export default async function DashboardPage() {
                     </p>
                     {movie.rating != null && (
                       <p className="text-xs text-amber-400 font-medium mt-0.5">
-                        {"★".repeat(movie.rating)}{"☆".repeat(5 - movie.rating)}
+                        {"★".repeat(Math.floor(movie.rating))}{movie.rating % 1 >= 0.5 ? "⯨" : ""}{"☆".repeat(5 - Math.ceil(movie.rating))}
+                        <span className="ml-1 text-amber-400/70">{movie.rating}/5</span>
                       </p>
                     )}
                   </div>

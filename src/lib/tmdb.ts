@@ -178,3 +178,75 @@ export function extractIdFromSlug(slug: string): number {
   if (!match) throw new Error("Invalid movie slug");
   return Number(match[1]);
 }
+
+/** Genre TMDB */
+export interface TmdbGenre {
+  id: number;
+  name: string;
+}
+
+/** Paramètres pour l'endpoint discover/movie */
+export interface DiscoverParams {
+  page?: number;
+  year?: number;
+  genres?: string; // comma-separated genre IDs
+  runtimeMin?: number;
+  runtimeMax?: number;
+  minRating?: number;
+  certification?: string;
+  sortBy?: string;
+}
+
+/** Récupère les films via l'endpoint discover avec filtres. */
+export async function discoverMovies(params: DiscoverParams = {}): Promise<{ results: NowPlayingMovie[]; total_pages: number }> {
+  const p = new URLSearchParams({
+    api_key: TMDB_API_KEY,
+    language: "fr-FR",
+    region: "FR",
+    page: String(params.page ?? 1),
+    sort_by: params.sortBy ?? "popularity.desc",
+    include_adult: "false",
+  });
+  if (params.year) p.set("primary_release_year", String(params.year));
+  if (params.genres) p.set("with_genres", params.genres);
+  if (params.runtimeMin) p.set("with_runtime.gte", String(params.runtimeMin));
+  if (params.runtimeMax) p.set("with_runtime.lte", String(params.runtimeMax));
+  if (params.minRating) p.set("vote_average.gte", String(params.minRating));
+  if (params.certification) {
+    p.set("certification_country", "FR");
+    p.set("certification", params.certification);
+  }
+  // Exclure les films pas encore sortis
+  const today = new Date().toISOString().slice(0, 10);
+  p.set("release_date.lte", today);
+
+  const res = await fetch(`${TMDB_BASE_URL}/discover/movie?${p}`, { next: { revalidate: 3600 } });
+  if (!res.ok) throw new Error(`TMDB discover failed: ${res.status}`);
+  const data = await res.json();
+  return { results: data.results, total_pages: data.total_pages };
+}
+
+/** Recherche de films par texte. */
+export async function searchMovies(query: string, page = 1): Promise<{ results: NowPlayingMovie[]; total_pages: number }> {
+  const p = new URLSearchParams({
+    api_key: TMDB_API_KEY,
+    language: "fr-FR",
+    region: "FR",
+    query,
+    page: String(page),
+    include_adult: "false",
+  });
+  const res = await fetch(`${TMDB_BASE_URL}/search/movie?${p}`, { next: { revalidate: 3600 } });
+  if (!res.ok) throw new Error(`TMDB search failed: ${res.status}`);
+  const data = await res.json();
+  return { results: data.results, total_pages: data.total_pages };
+}
+
+/** Récupère la liste des genres de films (cache 24h). */
+export async function getGenreList(): Promise<TmdbGenre[]> {
+  const url = `${TMDB_BASE_URL}/genre/movie/list?api_key=${TMDB_API_KEY}&language=fr-FR`;
+  const res = await fetch(url, { next: { revalidate: 86400 } });
+  if (!res.ok) throw new Error(`TMDB genre list failed: ${res.status}`);
+  const data = await res.json();
+  return data.genres;
+}
