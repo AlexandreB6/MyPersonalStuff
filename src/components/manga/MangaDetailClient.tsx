@@ -10,11 +10,14 @@ import { VolumeGrid } from "./VolumeGrid";
 
 interface Props {
   manga: MangaItem;
+  isInCollection?: boolean;
 }
 
-export function MangaDetailClient({ manga: initial }: Props) {
+export function MangaDetailClient({ manga: initial, isInCollection: initialInCollection = true }: Props) {
   const router = useRouter();
   const [manga, setManga] = useState(initial);
+  const [inCollection, setInCollection] = useState(initialInCollection);
+  const [adding, setAdding] = useState(false);
   const [notes, setNotes] = useState(initial.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
   const [extraVolume, setExtraVolume] = useState("");
@@ -76,6 +79,33 @@ export function MangaDetailClient({ manga: initial }: Props) {
     });
     router.push("/manga");
   }, [manga.malId, router]);
+
+  const addToCollection = useCallback(async () => {
+    setAdding(true);
+    try {
+      await fetch("/api/manga", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          malId: manga.malId,
+          title: manga.title,
+          titleJapanese: manga.titleJapanese,
+          coverImage: manga.coverImage,
+          author: manga.author,
+          volumes: manga.volumes,
+          chapters: manga.chapters,
+          synopsis: manga.synopsis,
+          genres: manga.genres,
+          demographic: manga.demographic,
+          score: manga.score,
+          status: manga.status,
+        }),
+      });
+      setInCollection(true);
+    } finally {
+      setAdding(false);
+    }
+  }, [manga]);
 
   return (
     <div className="space-y-8">
@@ -182,6 +212,18 @@ export function MangaDetailClient({ manga: initial }: Props) {
             )}
           </div>
 
+          {/* Bouton ajout collection */}
+          {!inCollection && (
+            <button
+              onClick={addToCollection}
+              disabled={adding}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              {adding ? "Ajout en cours…" : "Ajouter à ma collection"}
+            </button>
+          )}
+
           {/* Liens externes */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <a
@@ -223,71 +265,76 @@ export function MangaDetailClient({ manga: initial }: Props) {
         </section>
       )}
 
-      {/* Grille de volumes */}
-      <section>
-        <h2 className="text-xl font-bold mb-3">Volumes possédés</h2>
-        <VolumeGrid
-          totalVolumes={manga.volumes}
-          ownedVolumes={manga.ownedVolumesMap}
-          onToggle={toggleVolume}
-        />
-        {(manga.volumes == null || manga.ownedVolumesMap.some((v) => v > (manga.volumes ?? 0))) && (
-          <div className="mt-4 flex items-center gap-2">
-            <input
-              type="number"
-              min={1}
-              placeholder="N° volume"
-              value={extraVolume}
-              onChange={(e) => setExtraVolume(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addExtraVolume()}
-              className="h-9 w-28 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+      {/* Sections collection uniquement */}
+      {inCollection && (
+        <>
+          {/* Grille de volumes */}
+          <section>
+            <h2 className="text-xl font-bold mb-3">Volumes possédés</h2>
+            <VolumeGrid
+              totalVolumes={manga.volumes}
+              ownedVolumes={manga.ownedVolumesMap}
+              onToggle={toggleVolume}
             />
+            {(manga.volumes == null || manga.ownedVolumesMap.some((v) => v > (manga.volumes ?? 0))) && (
+              <div className="mt-4 flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="N° volume"
+                  value={extraVolume}
+                  onChange={(e) => setExtraVolume(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addExtraVolume()}
+                  className="h-9 w-28 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                />
+                <button
+                  onClick={addExtraVolume}
+                  className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+                >
+                  <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+                  Ajouter volume
+                </button>
+              </div>
+            )}
+          </section>
+
+          {/* Notes */}
+          <section>
+            <h2 className="text-xl font-bold mb-3">Notes</h2>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              onBlur={saveNotes}
+              placeholder="Ajouter des notes personnelles..."
+              rows={4}
+              className="w-full max-w-xl rounded-lg border border-input bg-background p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-y"
+            />
+            {savingNotes && <p className="text-xs text-muted-foreground mt-1">Sauvegarde...</p>}
+          </section>
+
+          {/* Zone danger */}
+          <section className="border-t border-border pt-6">
             <button
-              onClick={addExtraVolume}
-              className="flex items-center gap-1.5 rounded-md bg-primary/10 px-3 py-2 text-xs font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer"
+              onClick={() => setConfirmDelete(true)}
+              className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20 transition-colors cursor-pointer"
             >
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              Ajouter volume
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+              Supprimer de ma collection
             </button>
-          </div>
-        )}
-      </section>
+          </section>
 
-      {/* Notes */}
-      <section>
-        <h2 className="text-xl font-bold mb-3">Notes</h2>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          onBlur={saveNotes}
-          placeholder="Ajouter des notes personnelles..."
-          rows={4}
-          className="w-full max-w-xl rounded-lg border border-input bg-background p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-y"
-        />
-        {savingNotes && <p className="text-xs text-muted-foreground mt-1">Sauvegarde...</p>}
-      </section>
-
-      {/* Zone danger */}
-      <section className="border-t border-border pt-6">
-        <button
-          onClick={() => setConfirmDelete(true)}
-          className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20 transition-colors cursor-pointer"
-        >
-          <Trash2 className="h-4 w-4" aria-hidden="true" />
-          Supprimer de ma collection
-        </button>
-      </section>
-
-      <ConfirmDialog
-        open={confirmDelete}
-        title="Supprimer ce manga"
-        description={`« ${manga.title} » sera retiré de ta collection. Cette action est irréversible.`}
-        onConfirm={() => {
-          setConfirmDelete(false);
-          removeManga();
-        }}
-        onCancel={() => setConfirmDelete(false)}
-      />
+          <ConfirmDialog
+            open={confirmDelete}
+            title="Supprimer ce manga"
+            description={`« ${manga.title} » sera retiré de ta collection. Cette action est irréversible.`}
+            onConfirm={() => {
+              setConfirmDelete(false);
+              removeManga();
+            }}
+            onCancel={() => setConfirmDelete(false)}
+          />
+        </>
+      )}
     </div>
   );
 }

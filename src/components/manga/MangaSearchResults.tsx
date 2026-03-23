@@ -1,4 +1,6 @@
-import { BookOpen, Plus, Check, Star } from "lucide-react";
+import { BookOpen, Plus, Check, Star, Eye } from "lucide-react";
+import Link from "next/link";
+import { mangaSlugify } from "@/lib/jikan";
 import type { JikanManga } from "@/lib/jikan";
 
 interface MangaSearchResultsProps {
@@ -92,8 +94,8 @@ export function MangaSearchResults({ results, ownedMalIds, onAdd }: MangaSearchR
               )}
             </div>
 
-            {/* Bouton ajouter */}
-            <div className="flex-shrink-0 flex items-start pt-1">
+            {/* Actions */}
+            <div className="flex-shrink-0 flex flex-col items-end gap-1.5 pt-1">
               <button
                 onClick={() => {
                   if (!isOwned) onAdd(manga);
@@ -117,6 +119,13 @@ export function MangaSearchResults({ results, ownedMalIds, onAdd }: MangaSearchR
                   </>
                 )}
               </button>
+              <Link
+                href={`/manga/${mangaSlugify(manga.title, manga.mal_id)}`}
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <Eye className="h-3.5 w-3.5" aria-hidden="true" />
+                Voir la fiche
+              </Link>
             </div>
           </div>
         );
