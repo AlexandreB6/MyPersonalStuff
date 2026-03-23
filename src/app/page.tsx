@@ -67,7 +67,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Space cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {spaces.map((space) => (
           <Link
             key={space.href}
