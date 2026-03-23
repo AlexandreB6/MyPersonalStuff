@@ -45,7 +45,7 @@ export default function RootLayout({
               <span className="text-lg font-bold tracking-tight">MyPersonalStuff</span>
             </Link>
             <nav className="hidden md:flex items-center gap-5 ml-8 text-sm" aria-label="Navigation principale">
-              <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
+              <Link href="/cinema" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1.5">
                 <Film className="w-3.5 h-3.5" aria-hidden="true" />
                 Cinema
               </Link>
