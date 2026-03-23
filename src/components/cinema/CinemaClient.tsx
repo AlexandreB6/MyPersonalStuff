@@ -63,7 +63,7 @@ export function CinemaClient({
   const [selectedGenres, setSelectedGenres] = useState<number[]>([]);
   const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
   const [selectedMinRating, setSelectedMinRating] = useState<number | null>(null);
-  const [sortBy, setSortBy] = useState("popularity.desc");
+  const [sortBy, setSortBy] = useState("primary_release_date.desc");
 
   // Watched state
   const [watchedIds, setWatchedIds] = useState<Set<number>>(new Set(initialWatchedIds));
@@ -163,7 +163,7 @@ export function CinemaClient({
     setSelectedGenres([]);
     setSelectedDuration(null);
     setSelectedMinRating(null);
-    setSortBy("popularity.desc");
+    setSortBy("primary_release_date.desc");
   };
 
   const toggleGenre = (id: number) => {
@@ -172,7 +172,7 @@ export function CinemaClient({
     );
   };
 
-  const hasActiveFilters = selectedYear || selectedGenres.length || selectedDuration !== null || selectedMinRating || sortBy !== "popularity.desc" || activeQuery;
+  const hasActiveFilters = selectedYear || selectedGenres.length || selectedDuration !== null || selectedMinRating || sortBy !== "primary_release_date.desc" || activeQuery;
 
   // Mark watched handler
   const handleMarkWatched = async (tmdbId: number, rating: number | null, watchedAt: string | null) => {

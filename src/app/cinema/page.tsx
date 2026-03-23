@@ -14,7 +14,7 @@ export default async function CinemaPage() {
   // Parallel fetch: genres, discover (current year, popular), watched movies
   const [genreList, discoverResult, watchedMovies] = await Promise.all([
     getGenreList(),
-    discoverMovies({ page: 1, year: currentYear }),
+    discoverMovies({ page: 1, sortBy: "primary_release_date.desc" }),
     prisma.movie.findMany({
       orderBy: { createdAt: "desc" },
       select: {
