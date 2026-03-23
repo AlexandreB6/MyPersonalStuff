@@ -219,6 +219,8 @@ export async function discoverMovies(params: DiscoverParams = {}): Promise<{ res
   // Exclure les films pas encore sortis
   const today = new Date().toISOString().slice(0, 10);
   p.set("release_date.lte", today);
+  // Minimum de votes pour éviter les films obscurs sans données
+  if (!params.minRating) p.set("vote_count.gte", "50");
 
   const res = await fetch(`${TMDB_BASE_URL}/discover/movie?${p}`, { next: { revalidate: 3600 } });
   if (!res.ok) throw new Error(`TMDB discover failed: ${res.status}`);
