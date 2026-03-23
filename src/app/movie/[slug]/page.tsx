@@ -61,7 +61,7 @@ export default async function MovieDetailPage({ params }: Props) {
 
             <div className="flex-1 space-y-3">
               <Link
-                href="/"
+                href="/cinema"
                 className="inline-flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-4 h-4" aria-hidden="true" />
@@ -119,18 +119,6 @@ export default async function MovieDetailPage({ params }: Props) {
 
               {/* Liens externes */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
-                {trailer && (
-                  <a
-                    href={`https://www.youtube.com/watch?v=${trailer.key}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Bande-annonce sur YouTube (ouvre dans un nouvel onglet)"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-colors"
-                  >
-                    <Play className="w-4 h-4 fill-white" aria-hidden="true" />
-                    Bande-annonce
-                  </a>
-                )}
                 {movie.imdb_id && (
                   <a
                     href={`https://www.imdb.com/title/${movie.imdb_id}`}
@@ -187,6 +175,25 @@ export default async function MovieDetailPage({ params }: Props) {
           <section>
             <h2 className="text-xl font-bold mb-4">Synopsis</h2>
             <p className="text-white/70 leading-relaxed max-w-3xl text-base">{movie.overview}</p>
+          </section>
+        )}
+
+        {/* Bande-annonce */}
+        {trailer && (
+          <section>
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
+              <Play className="w-5 h-5 text-red-500 fill-red-500" aria-hidden="true" />
+              Bande-annonce
+            </h2>
+            <div className="relative max-w-3xl aspect-video rounded-xl overflow-hidden border border-white/10">
+              <iframe
+                src={`https://www.youtube.com/embed/${trailer.key}?rel=0&modestbranding=1`}
+                title={trailer.name ?? `Bande-annonce de ${movie.title}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                className="absolute inset-0 w-full h-full"
+              />
+            </div>
           </section>
         )}
 
