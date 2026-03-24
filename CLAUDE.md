@@ -30,13 +30,26 @@ No lint or test scripts are configured.
 
 Pages are server components that fetch data via Prisma or external APIs, then pass serialized data to `*Client.tsx` client components. The app is dark-mode only (`<html lang="fr" className="dark">`).
 
-### Homepage (`/`) — "À l'affiche"
+### Homepage (`/`) — Dashboard
 
-Displays now-playing movies from TMDB (fr-FR locale). Server-loads 2 pages (40 movies) with credits, client paginates the rest via `/api/now-playing`. Components: `MovieGrid`, `MovieCard`.
+Dashboard showing an overview of all spaces (Cinema, Manga, Peinture) with counters and the 5 most recently added items per space. Server component fetching from Prisma.
+
+### Cinema space (`/cinema`)
+
+- Explore TMDB catalog via discover (filters: year, genre, runtime, rating, certification, sort) or text search
+- Mark movies as watched with rating (0.5–5 stars, 0.5 step), watched date (day or year precision)
+- Two tabs: "Explorer" (TMDB discover grid) and "Films vus" (personal collection)
+- Client pagination via `/api/discover/` route
+- Components in `src/components/cinema/`: `CinemaClient.tsx`, `MovieCard.tsx`, `MovieGrid.tsx`, `MarkWatchedDialog.tsx`, `WatchedToggle.tsx`, `BackToCinema.tsx`
+- `src/lib/tmdb.ts` — TMDB API helpers: `discoverMovies()`, `searchMovies()`, `getMovieWithCredits()`, `getMovieReviews()`, `getGenreList()`, `getDirector()`, `getTopCast()`, `getTrailer()`, `formatRuntime()`
 
 ### Movie detail (`/movie/[slug]`)
 
-Slug format: `title-slug-{tmdbId}` (e.g. `mon-film-12345`). Use `slugify()` / `extractIdFromSlug()` from `src/lib/tmdb.ts`.
+- Slug format: `title-slug-{tmdbId}` (e.g. `mon-film-12345`). Use `slugify()` / `extractIdFromSlug()` from `src/lib/tmdb.ts`
+- Hero backdrop, poster, tagline, metadata (rating, runtime, date, country), genres
+- Synopsis, YouTube trailer embed, director, cast (top 12), TMDB reviews
+- External links: IMDb, TMDB, AlloCiné, official site
+- `WatchedToggle` component for marking watched / editing rating / removing from collection
 
 ### Peinture space (`/peinture`)
 
@@ -53,13 +66,15 @@ Slug format: `title-slug-{tmdbId}` (e.g. `mon-film-12345`). Use `slugify()` / `e
 - Search via Jikan API (MyAnimeList) → add to DB → display collection
 - ISBN barcode scanning via Quagga2 → Google Books → Jikan lookup chain
 - Tracks owned volumes as JSON array in `ownedVolumesMap` field (e.g. `"[1,2,3,5]"`)
-- Components in `src/components/manga/`
+- Components in `src/components/manga/`: `MangaClient.tsx`, `MangaCard.tsx`, `MangaDetailClient.tsx`, `AddMangaDialog.tsx`, `ScanMangaDialog.tsx`, `MangaSearchResults.tsx`, `VolumeGrid.tsx`
 - API routes: `/api/manga/` (CRUD), `/api/manga/search/` (Jikan proxy), `/api/manga/isbn/` (ISBN lookup)
 - `src/lib/jikan.ts` — Jikan API helpers and types
 
 ### API routes summary
 
-- `/api/now-playing/` — proxy for TMDB now-playing (client pagination)
+- `/api/discover/` — TMDB discover/search proxy with credits enrichment (filters: query, year, genres, runtime, rating, certification, sort)
+- `/api/movies/` — CRUD for watched movies collection (POST upsert, PUT update rating/owned/watchedAt, DELETE)
+- `/api/now-playing/` — proxy for TMDB now-playing (legacy, client pagination)
 - `/api/paints/` — CRUD for owned paints
 - `/api/manga/` — CRUD for manga collection
 - `/api/manga/search/` — proxy for Jikan manga search
