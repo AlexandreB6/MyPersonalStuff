@@ -27,8 +27,8 @@ function isLightColor(hex: string): boolean {
 }
 
 /**
- * Carte d'une peinture Citadel — affiche le swatch de couleur, le nom,
- * le type et les boutons d'ajout/quantité.
+ * Carte d'une peinture — affiche le swatch de couleur, le nom,
+ * le type et les boutons d'ajout/quantité. Générique, fonctionne pour toutes les gammes.
  */
 export function PaintCard({
   paint,
@@ -104,7 +104,8 @@ export function PaintCard({
         {!inStock ? (
           <button
             onClick={onAdd}
-            className="w-full rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors"
+            aria-label={`Ajouter ${paint.name} à l'inventaire`}
+            className="w-full rounded-md bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/20 transition-colors cursor-pointer"
           >
             Ajouter
           </button>

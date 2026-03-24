@@ -63,20 +63,11 @@ export function formatGenres(manga: JikanManga): string {
   return manga.genres.map((g) => g.name).join(", ");
 }
 
+// Re-export des fonctions de slug depuis utils.ts pour rétrocompatibilité
+import { makeSlug, extractIdFromSlug } from "./utils";
+
 /** Génère un slug URL-safe depuis le titre et l'ID MAL. */
-export function mangaSlugify(title: string, malId: number): string {
-  const slug = title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  return `${slug}-${malId}`;
-}
+export const mangaSlugify = makeSlug;
 
 /** Extrait l'ID MAL depuis un slug manga. */
-export function extractMalIdFromSlug(slug: string): number {
-  const match = slug.match(/-(\d+)$/);
-  if (!match) throw new Error("Invalid manga slug");
-  return Number(match[1]);
-}
+export const extractMalIdFromSlug = extractIdFromSlug;

@@ -82,6 +82,7 @@ export function MovieCard(props: MovieCardProps) {
 
           {/* Top-right : note TMDB */}
           <div
+            role="img"
             className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1 bg-black/70 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded-full"
             aria-label={`Note : ${rating.toFixed(1)} sur 10`}
           >

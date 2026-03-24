@@ -6,6 +6,11 @@ import { RANGE_MAP } from "@/data/paint-ranges";
 
 export const dynamic = "force-dynamic";
 
+/**
+ * Page d'accueil — Dashboard.
+ * Affiche un résumé de chaque espace (cinéma, manga, peinture)
+ * avec les derniers éléments ajoutés et les compteurs globaux.
+ */
 export default async function DashboardPage() {
   const [movies, mangas, paints] = await Promise.all([
     prisma.movie.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
@@ -19,12 +24,7 @@ export default async function DashboardPage() {
     prisma.ownedPaint.count(),
   ]);
 
-  const totalVolumes = mangas.reduce((sum, m) => {
-    const owned = JSON.parse(m.ownedVolumesMap) as number[];
-    return sum + owned.length;
-  }, 0);
-
-  // For total volumes we need all mangas, not just 5
+  // Récupère tous les mangas pour calculer le total de volumes possédés (pas seulement les 5 derniers)
   const allMangaVolumes = await prisma.manga.findMany({ select: { ownedVolumesMap: true } });
   const totalOwnedVolumes = allMangaVolumes.reduce((sum, m) => {
     const owned = JSON.parse(m.ownedVolumesMap) as number[];

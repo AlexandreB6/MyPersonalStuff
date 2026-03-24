@@ -18,7 +18,7 @@ const NAV_ITEMS = [
 export function MobileNav() {
   const [open, setOpen] = useState(false);
 
-  // Fermer le menu avec la touche Escape
+  // Fermer le menu avec la touche Escape — accessibilité clavier
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if (e.key === "Escape") setOpen(false);
   }, []);

@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Eye, EyeOff, Pencil, Star, StarHalf, X } from "lucide-react";
+import { buildYearOptions } from "@/lib/utils";
 
-const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1970 + 1 }, (_, i) => CURRENT_YEAR - i);
+const YEAR_OPTIONS = buildYearOptions(1970);
 
 interface WatchedToggleProps {
   tmdbId: number;
@@ -27,6 +27,7 @@ interface WatchedToggleProps {
 export function WatchedToggle({
   tmdbId, title, posterPath, overview, director, releaseYear, releaseDate,
   initialWatched, initialRating, initialWatchedAt,
+  // initialWatchedPrecision n'est pas utilisé — la précision est toujours "year" dans le dialog
 }: WatchedToggleProps) {
   const [watched, setWatched] = useState(initialWatched);
   const [userRating, setUserRating] = useState<number | null>(initialRating);
@@ -152,8 +153,11 @@ export function WatchedToggle({
 
       {/* Dialog */}
       {showDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowDialog(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setShowDialog(false)} aria-hidden="true">
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={isEditing ? `Modifier ${title}` : `Marquer ${title} comme vu`}
             className="relative bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-5"
             onClick={(e) => e.stopPropagation()}
           >

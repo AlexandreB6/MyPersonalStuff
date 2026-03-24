@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   const query = sp.get("query") ?? "";
   const page = Number(sp.get("page") ?? "1");
 
+  // Recherche textuelle ou découverte par filtres selon la présence de `query`
   let results: { results: { id: number }[]; total_pages: number };
 
   if (query.trim()) {
@@ -36,6 +37,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  // Enrichir chaque film avec les crédits complets (réalisateur, casting, durée, genres)
   const detailed = await Promise.all(
     results.results.map(async (m) => {
       try {

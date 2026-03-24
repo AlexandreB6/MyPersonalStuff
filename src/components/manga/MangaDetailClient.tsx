@@ -13,6 +13,10 @@ interface Props {
   isInCollection?: boolean;
 }
 
+/**
+ * Client component pour la page de détail d'un manga.
+ * Gère l'affichage des infos, la grille de volumes, les notes et les actions CRUD.
+ */
 export function MangaDetailClient({ manga: initial, isInCollection: initialInCollection = true }: Props) {
   const router = useRouter();
   const [manga, setManga] = useState(initial);

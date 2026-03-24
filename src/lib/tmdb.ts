@@ -161,23 +161,14 @@ export function getTrailer(movie: MovieDetails): MovieVideo | null {
   );
 }
 
+// Re-export des fonctions de slug depuis utils.ts pour rétrocompatibilité
+import { makeSlug, extractIdFromSlug as _extractIdFromSlug } from "./utils";
+
 /** Génère un slug URL-safe à partir du titre et de l'id TMDB (ex: "mon-film-12345"). */
-export function slugify(title: string, id: number): string {
-  const slug = title
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-  return `${slug}-${id}`;
-}
+export const slugify = makeSlug;
 
 /** Extrait l'id TMDB numérique depuis un slug (ex: "mon-film-12345" → 12345). */
-export function extractIdFromSlug(slug: string): number {
-  const match = slug.match(/-(\d+)$/);
-  if (!match) throw new Error("Invalid movie slug");
-  return Number(match[1]);
-}
+export const extractIdFromSlug = _extractIdFromSlug;
 
 /** Genre TMDB */
 export interface TmdbGenre {

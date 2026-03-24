@@ -12,6 +12,10 @@ interface ScanMangaDialogProps {
   onAdd: (manga: JikanManga) => void;
 }
 
+/**
+ * Dialog de scan de code-barres manga via la caméra (Quagga2).
+ * Flux : caméra → détection EAN-13 → lookup ISBN → résultats Jikan.
+ */
 export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const viewfinderRef = useRef<HTMLDivElement>(null);

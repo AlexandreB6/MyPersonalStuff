@@ -15,6 +15,7 @@ interface VolumeGridProps {
  */
 export function VolumeGrid({ totalVolumes, ownedVolumes, onToggle }: VolumeGridProps) {
   const ownedSet = new Set(ownedVolumes);
+  // Nombre total de cases à afficher : soit le total connu, soit le max des volumes possédés
   const count = totalVolumes ?? Math.max(0, ...ownedVolumes, 0);
 
   const handleToggle = useCallback(

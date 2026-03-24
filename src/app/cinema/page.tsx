@@ -9,9 +9,7 @@ export const dynamic = "force-dynamic";
  * Page Cinéma — Explorer le catalogue TMDB avec filtres + gérer les films vus.
  */
 export default async function CinemaPage() {
-  const currentYear = new Date().getFullYear();
-
-  // Parallel fetch: genres, discover (current year, popular), watched movies
+  // Chargement parallèle : genres, discover (sorties récentes), films vus
   const [genreList, discoverResult, watchedMovies] = await Promise.all([
     getGenreList(),
     discoverMovies({ page: 1, sortBy: "primary_release_date.desc" }),
@@ -31,12 +29,13 @@ export default async function CinemaPage() {
     }),
   ]);
 
+  // IDs TMDB des films déjà vus — pour afficher le badge "Vu" dans la grille
   const watchedTmdbIds = watchedMovies
     .filter((m) => m.tmdbId != null)
     .map((m) => m.tmdbId as number);
   const watchedSet = new Set(watchedTmdbIds);
 
-  // Enrich discover results with credits
+  // Enrichir chaque résultat discover avec les crédits (réalisateur, casting, durée)
   const detailed = await Promise.all(
     discoverResult.results.map(async (m) => {
       try {
@@ -68,6 +67,7 @@ export default async function CinemaPage() {
       };
     });
 
+  // Sérialiser les films vus pour passage au client (dates → ISO strings)
   const serializedWatched = watchedMovies
     .filter((m) => m.tmdbId != null)
     .map((m) => ({

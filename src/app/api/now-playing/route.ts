@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
   const serialized = movies.map((movie) => {
     const director = getDirector(movie);
     return {
-      id: movie.id,
+      tmdbId: movie.id,
       title: movie.title,
       posterPath: movie.poster_path,
       rating: movie.vote_average,

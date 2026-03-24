@@ -28,6 +28,7 @@ export function ConfirmDialog({
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
 
+  // Synchronise l'état ouvert/fermé avec le dialog natif
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -35,6 +36,7 @@ export function ConfirmDialog({
     else if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  // Intercepte l'événement "cancel" (touche Escape) pour fermer proprement
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;

@@ -2,6 +2,7 @@
 
 import { useState, useRef } from "react";
 import { Star, StarHalf, X } from "lucide-react";
+import { buildYearOptions } from "@/lib/utils";
 import type { MovieCardData } from "./MovieCard";
 
 interface MarkWatchedDialogProps {
@@ -13,8 +14,7 @@ interface MarkWatchedDialogProps {
   initialWatchedAt?: string | null;
 }
 
-const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1970 + 1 }, (_, i) => CURRENT_YEAR - i);
+const YEAR_OPTIONS = buildYearOptions(1970);
 
 /**
  * Dialog pour marquer un film comme vu — note demi-étoiles (optionnelle) + année optionnelle.
@@ -64,8 +64,11 @@ export function MarkWatchedDialog({ movie, onClose, onConfirm, initialRating, in
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onClose} aria-hidden="true">
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={isEditMode ? `Modifier ${movie.title}` : `Marquer ${movie.title} comme vu`}
         className="relative bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 space-y-5"
         onClick={(e) => e.stopPropagation()}
       >

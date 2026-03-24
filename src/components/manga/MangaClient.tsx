@@ -5,6 +5,7 @@ import { Search, X } from "lucide-react";
 import { MangaCard, type MangaItem } from "./MangaCard";
 import { AddMangaDialog } from "./AddMangaDialog";
 import { ScanMangaDialog } from "./ScanMangaDialog";
+import { DEMOGRAPHIC_OPTIONS } from "@/lib/utils";
 import type { JikanManga } from "@/lib/jikan";
 
 interface Props {
@@ -16,15 +17,6 @@ const STATUS_OPTIONS = [
   { value: "all", label: "Tous" },
   { value: "Publishing", label: "En cours" },
   { value: "Finished", label: "Terminé" },
-] as const;
-
-/** Démographies de filtrage */
-const DEMOGRAPHIC_OPTIONS = [
-  { value: "all", label: "Tous" },
-  { value: "Shounen", label: "Shonen" },
-  { value: "Shoujo", label: "Shojo" },
-  { value: "Seinen", label: "Seinen" },
-  { value: "Josei", label: "Josei" },
 ] as const;
 
 /**

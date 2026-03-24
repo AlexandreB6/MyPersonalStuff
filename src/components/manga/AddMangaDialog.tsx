@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Search, Plus, X, Loader2 } from "lucide-react";
 import { MangaSearchResults } from "./MangaSearchResults";
+import { DEMOGRAPHIC_OPTIONS } from "@/lib/utils";
 import type { JikanManga } from "@/lib/jikan";
 
 interface AddMangaDialogProps {
@@ -36,14 +37,6 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
     setResults([]);
     setDemographicFilter("all");
   }, []);
-
-  const DEMOGRAPHIC_OPTIONS = [
-    { value: "all", label: "Tous" },
-    { value: "Shounen", label: "Shonen" },
-    { value: "Shoujo", label: "Shojo" },
-    { value: "Seinen", label: "Seinen" },
-    { value: "Josei", label: "Josei" },
-  ] as const;
 
   const filteredResults = useMemo(() => {
     if (demographicFilter === "all") return results;

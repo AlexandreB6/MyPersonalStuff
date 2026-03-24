@@ -1,7 +1,12 @@
+/**
+ * Route API : GET /api/manga/isbn?isbn=...
+ * Chaîne de recherche : ISBN → Google Books (titre) → Jikan (manga MAL).
+ */
+
 import { NextRequest, NextResponse } from "next/server";
 import { searchManga } from "@/lib/jikan";
 
-/** Nettoie le titre Google Books pour améliorer la recherche Jikan. */
+/** Nettoie le titre Google Books pour améliorer la recherche Jikan (retire "Vol.", "Tome", etc.). */
 function cleanTitle(raw: string): string {
   return raw
     .replace(/,?\s*(Vol\.?|Tome|T\.?)\s*\d+/gi, "")

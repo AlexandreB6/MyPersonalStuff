@@ -17,6 +17,7 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
+/** Page d'une gamme de peinture — charge les possessions depuis la DB et passe au client. */
 export default async function PeintureRangePage({ params }: Props) {
   const { range: rangeSlug } = await params;
   const range = RANGE_MAP.get(rangeSlug);

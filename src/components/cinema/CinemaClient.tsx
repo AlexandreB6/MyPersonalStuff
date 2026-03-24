@@ -10,6 +10,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { MovieCardData } from "./MovieCard";
 import { slugify } from "@/lib/tmdb";
 import type { TmdbGenre } from "@/lib/tmdb";
+import { CURRENT_YEAR, buildYearOptions } from "@/lib/utils";
 
 interface WatchedMovie {
   tmdbId: number;
@@ -31,8 +32,7 @@ interface CinemaClientProps {
   watchedMovies: WatchedMovie[];
 }
 
-const CURRENT_YEAR = new Date().getFullYear();
-const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1980 + 1 }, (_, i) => CURRENT_YEAR - i);
+const YEAR_OPTIONS = buildYearOptions(1980);
 const DURATION_PRESETS = [
   { label: "< 1h30", min: 0, max: 90 },
   { label: "1h30-2h", min: 90, max: 120 },
@@ -54,13 +54,13 @@ export function CinemaClient({
   watchedTmdbIds: initialWatchedIds,
   watchedMovies: initialWatchedMovies,
 }: CinemaClientProps) {
-  // Tabs — synced with URL ?tab= param for back-navigation support
+  // Onglets — synchronisés avec le paramètre URL ?tab= pour supporter la navigation arrière
   const searchParams = useSearchParams();
   const router = useRouter();
   const tabFromUrl = searchParams.get("tab") === "collection" ? "collection" : "explore";
   const [activeTab, setActiveTabState] = useState<"explore" | "collection">(tabFromUrl);
 
-  // Sync tab state when URL changes (browser back/forward)
+  // Synchronise l'état des onglets quand l'URL change (boutons précédent/suivant du navigateur)
   useEffect(() => {
     setActiveTabState(tabFromUrl);
   }, [tabFromUrl]);
@@ -73,7 +73,7 @@ export function CinemaClient({
     router.push(`/cinema?${params.toString()}`, { scroll: false });
   }, [searchParams, router]);
 
-  // Explorer state
+  // État de l'onglet Explorer (filtres, pagination, résultats)
   const [movies, setMovies] = useState<MovieCardData[]>(initialMovies);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(initialTotalPages);
@@ -86,20 +86,20 @@ export function CinemaClient({
   const [selectedMinRating, setSelectedMinRating] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState("primary_release_date.desc");
 
-  // Watched state
+  // État des films vus
   const [watchedIds, setWatchedIds] = useState<Set<number>>(new Set(initialWatchedIds));
   const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>(initialWatchedMovies);
   const [dialogMovie, setDialogMovie] = useState<MovieCardData | null>(null);
 
-  // Edit mode for collection items
+  // Mode édition pour les éléments de la collection
   const [editMovie, setEditMovie] = useState<WatchedMovie | null>(null);
 
-  // Collection filter
+  // Filtres de la collection
   const [collectionSearch, setCollectionSearch] = useState("");
   const [collectionRatingFilter, setCollectionRatingFilter] = useState<number | null>(null);
   const [collectionYearFilter, setCollectionYearFilter] = useState<number | null>(null);
 
-  // Re-fetch collection when the collection tab is active (handles stale data after back navigation)
+  // Rafraîchir la collection quand l'onglet est actif (gère les données obsolètes après navigation)
   useEffect(() => {
     if (activeTab !== "collection") return;
     const refresh = async () => {
@@ -130,7 +130,7 @@ export function CinemaClient({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isSearchMode = activeQuery.trim().length > 0;
 
-  // Build query params for discover API
+  // Construire les paramètres de requête pour l'API discover
   const buildParams = useCallback(
     (p: number, query?: string) => {
       const params = new URLSearchParams({ page: String(p) });
@@ -152,7 +152,7 @@ export function CinemaClient({
     [selectedYear, selectedGenres, selectedDuration, selectedMinRating, sortBy]
   );
 
-  // Fetch movies
+  // Charger les films depuis l'API
   const fetchMovies = useCallback(
     async (p: number, append: boolean, query?: string) => {
       setLoading(true);
@@ -178,7 +178,7 @@ export function CinemaClient({
     [buildParams, watchedIds]
   );
 
-  // Debounced search
+  // Recherche avec délai (debounce 300ms)
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -187,7 +187,7 @@ export function CinemaClient({
     return () => clearTimeout(debounceRef.current);
   }, [searchQuery]);
 
-  // Re-fetch when filters or active query change
+  // Re-charger quand les filtres ou la recherche changent
   const isInitialRender = useRef(true);
   useEffect(() => {
     if (isInitialRender.current) {
@@ -198,7 +198,7 @@ export function CinemaClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedYear, selectedGenres, selectedDuration, selectedMinRating, sortBy, activeQuery]);
 
-  // Update watched badges when watchedIds changes
+  // Mettre à jour les badges "Vu" quand la liste des IDs vus change
   useEffect(() => {
     setMovies((prev) =>
       prev.map((m) => ({ ...m, watched: watchedIds.has(m.tmdbId) }))
@@ -227,7 +227,7 @@ export function CinemaClient({
 
   const hasActiveFilters = selectedYear || selectedGenres.length || selectedDuration !== null || selectedMinRating || sortBy !== "primary_release_date.desc" || activeQuery;
 
-  // Mark watched handler
+  // Marquer un film comme vu — enregistre en base et met à jour l'état local
   const handleMarkWatched = async (tmdbId: number, rating: number | null, watchedAt: string | null, watchedPrecision: "day" | "year" = "day") => {
     const movie = movies.find((m) => m.tmdbId === tmdbId);
     if (!movie) return;
@@ -268,7 +268,7 @@ export function CinemaClient({
     }
   };
 
-  // Remove from collection with confirmation dialog
+  // Retirer un film de la collection (avec dialog de confirmation)
   const [movieToRemove, setMovieToRemove] = useState<WatchedMovie | null>(null);
 
   const handleRemoveWatched = async (tmdbId: number) => {
@@ -288,7 +288,7 @@ export function CinemaClient({
     setMovieToRemove(null);
   };
 
-  // Edit watched movie (rating / date)
+  // Modifier un film vu (note / date de visionnage)
   const handleEditWatched = async (tmdbId: number, rating: number | null, watchedAt: string | null, watchedPrecision: "day" | "year" = "day") => {
     const res = await fetch("/api/movies", {
       method: "PUT",
@@ -307,14 +307,14 @@ export function CinemaClient({
     }
   };
 
-  // Available watched years (descending)
+  // Années de visionnage disponibles (tri décroissant)
   const collectionWatchedYears = [...new Set(
     watchedMovies
       .filter((m) => m.watchedAt)
       .map((m) => new Date(m.watchedAt!).getFullYear())
   )].sort((a, b) => b - a);
 
-  // Filtered collection
+  // Collection filtrée selon les critères actifs
   const filteredCollection = watchedMovies.filter((m) => {
     if (collectionSearch && !m.title.toLowerCase().includes(collectionSearch.toLowerCase())) return false;
     if (collectionRatingFilter && (m.rating ?? 0) < collectionRatingFilter) return false;
@@ -327,9 +327,12 @@ export function CinemaClient({
 
   return (
     <div className="space-y-6">
-      {/* Tabs */}
-      <div className="flex gap-1 bg-white/5 rounded-xl p-1 w-fit">
+      {/* Onglets — navigation entre Explorer et Ma collection */}
+      <div className="flex gap-1 bg-white/5 rounded-xl p-1 w-fit" role="tablist" aria-label="Sections cinéma">
         <button
+          role="tab"
+          aria-selected={activeTab === "explore"}
+          aria-controls="tab-explore"
           onClick={() => setActiveTab("explore")}
           className={`px-5 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer ${
             activeTab === "explore"
@@ -340,6 +343,9 @@ export function CinemaClient({
           Explorer
         </button>
         <button
+          role="tab"
+          aria-selected={activeTab === "collection"}
+          aria-controls="tab-collection"
           onClick={() => setActiveTab("collection")}
           className={`px-5 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 cursor-pointer ${
             activeTab === "collection"
@@ -357,9 +363,9 @@ export function CinemaClient({
         </button>
       </div>
 
-      {/* Explorer tab */}
+      {/* Panneau Explorer */}
       {activeTab === "explore" && (
-        <div className="space-y-6">
+        <div id="tab-explore" role="tabpanel" className="space-y-6">
           {/* Search bar */}
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
@@ -506,9 +512,9 @@ export function CinemaClient({
         </div>
       )}
 
-      {/* Collection tab */}
+      {/* Panneau Ma collection */}
       {activeTab === "collection" && (
-        <div className="space-y-6">
+        <div id="tab-collection" role="tabpanel" className="space-y-6">
           <div className="flex flex-wrap items-center gap-4">
             <div className="relative max-w-xs flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" aria-hidden="true" />
