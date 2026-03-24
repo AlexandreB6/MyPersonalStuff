@@ -264,7 +264,7 @@ export const MONUMENT_HOBBIES_RANGE: PaintRange = {
   slug: "monument-hobbies",
   brand: "Monument Hobbies",
   name: "Pro Acryl",
-  description: "Peintures Pro Acryl pour figurines et maquettes",
+  description: "",
   paints: MONUMENT_HOBBIES_PAINTS,
   paintTypes: MH_PAINT_TYPES,
   typeColors: MH_TYPE_COLORS,

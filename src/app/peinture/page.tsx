@@ -7,6 +7,7 @@ export const metadata = {
   description: "Inventaire de peintures miniatures",
 };
 
+/** Page hub Peinture — liste les gammes disponibles avec compteurs de possession. */
 export default async function PeinturePage() {
   const counts = await prisma.ownedPaint.groupBy({
     by: ["range"],
@@ -53,9 +54,11 @@ export default async function PeinturePage() {
                 </span>
               </div>
 
-              <p className="mt-3 text-sm text-muted-foreground">
-                {range.description}
-              </p>
+              {range.description && (
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {range.description}
+                </p>
+              )}
 
               {/* Color swatches */}
               <div className="mt-4 flex gap-1.5">

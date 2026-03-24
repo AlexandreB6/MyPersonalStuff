@@ -318,7 +318,7 @@ export const CITADEL_RANGE: PaintRange = {
   slug: "citadel",
   brand: "Games Workshop",
   name: "Citadel",
-  description: "Peintures Citadel pour figurines Warhammer",
+  description: "",
   paints: CITADEL_PAINTS,
   paintTypes: PAINT_TYPES,
   typeColors: CITADEL_TYPE_COLORS,
