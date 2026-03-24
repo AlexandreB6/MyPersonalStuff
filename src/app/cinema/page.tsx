@@ -1,46 +1,100 @@
-import { getNowPlaying, getMovieWithCredits, getDirector, getTopCast, formatRuntime } from "@/lib/tmdb";
-import { MovieGrid } from "@/components/MovieGrid";
-import type { MovieCardData } from "@/components/MovieCard";
+import { discoverMovies, getMovieWithCredits, getDirector, getTopCast, formatRuntime, getGenreList } from "@/lib/tmdb";
+import { prisma } from "@/lib/prisma";
+import { CinemaClient } from "@/components/cinema/CinemaClient";
+import type { MovieCardData } from "@/components/cinema/MovieCard";
+
+export const dynamic = "force-dynamic";
 
 /**
- * Page Cinéma — affiche les films actuellement à l'affiche.
- * Charge les 2 premières pages (40 films) côté serveur, le reste est paginé côté client.
+ * Page Cinéma — Explorer le catalogue TMDB avec filtres + gérer les films vus.
  */
 export default async function CinemaPage() {
-  // Load first 2 pages (40 movies) on initial render
-  const [page1, page2] = await Promise.all([
-    getNowPlaying(1),
-    getNowPlaying(2),
+  const currentYear = new Date().getFullYear();
+
+  // Parallel fetch: genres, discover (current year, popular), watched movies
+  const [genreList, discoverResult, watchedMovies] = await Promise.all([
+    getGenreList(),
+    discoverMovies({ page: 1, sortBy: "primary_release_date.desc" }),
+    prisma.movie.findMany({
+      orderBy: { createdAt: "desc" },
+      select: {
+        tmdbId: true,
+        title: true,
+        posterPath: true,
+        director: true,
+        releaseYear: true,
+        rating: true,
+        watchedAt: true,
+        watchedPrecision: true,
+        overview: true,
+      },
+    }),
   ]);
 
-  const allNowPlaying = [...page1.results, ...page2.results];
+  const watchedTmdbIds = watchedMovies
+    .filter((m) => m.tmdbId != null)
+    .map((m) => m.tmdbId as number);
+  const watchedSet = new Set(watchedTmdbIds);
 
-  const moviesDetails = await Promise.all(
-    allNowPlaying.map((m) => getMovieWithCredits(m.id))
+  // Enrich discover results with credits
+  const detailed = await Promise.all(
+    discoverResult.results.map(async (m) => {
+      try {
+        return await getMovieWithCredits(m.id);
+      } catch {
+        return null;
+      }
+    })
   );
 
-  const movies: MovieCardData[] = moviesDetails.map((movie) => {
-    const director = getDirector(movie);
-    return {
-      id: movie.id,
-      title: movie.title,
-      posterPath: movie.poster_path,
-      rating: movie.vote_average,
-      runtime: movie.runtime ? formatRuntime(movie.runtime) : null,
-      director: director?.name ?? null,
-      cast: getTopCast(movie, 3).map((c) => c.name),
-      releaseDate: movie.release_date,
-      genres: movie.genres.slice(0, 2).map((g) => g.name),
-    };
-  });
+  const initialMovies: MovieCardData[] = detailed
+    .filter((m) => m !== null)
+    .map((movie) => {
+      const director = getDirector(movie);
+      return {
+        tmdbId: movie.id,
+        title: movie.title,
+        originalTitle: movie.original_title !== movie.title ? movie.original_title : null,
+        posterPath: movie.poster_path,
+        rating: movie.vote_average,
+        runtimeMinutes: movie.runtime,
+        runtime: movie.runtime ? formatRuntime(movie.runtime) : null,
+        director: director?.name ?? null,
+        cast: getTopCast(movie, 3).map((c) => c.name),
+        releaseDate: movie.release_date,
+        genres: movie.genres.slice(0, 2).map((g) => g.name),
+        overview: movie.overview,
+        watched: watchedSet.has(movie.id),
+      };
+    });
+
+  const serializedWatched = watchedMovies
+    .filter((m) => m.tmdbId != null)
+    .map((m) => ({
+      tmdbId: m.tmdbId as number,
+      title: m.title,
+      posterPath: m.posterPath,
+      director: m.director,
+      releaseYear: m.releaseYear,
+      rating: m.rating,
+      watchedAt: m.watchedAt?.toISOString() ?? null,
+      watchedPrecision: m.watchedPrecision,
+      overview: m.overview ?? null,
+    }));
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-4xl font-extrabold tracking-tight">À l&apos;affiche</h1>
-        <p className="text-muted-foreground mt-2 text-lg">Les dernières sorties au cinéma</p>
+        <h1 className="text-4xl font-extrabold tracking-tight">Cinéma</h1>
+        <p className="text-muted-foreground mt-2 text-lg">Explorez le catalogue et gérez vos films vus</p>
       </div>
-      <MovieGrid initialMovies={movies} initialPage={2} totalPages={page1.total_pages} />
+      <CinemaClient
+        initialMovies={initialMovies}
+        initialTotalPages={discoverResult.total_pages}
+        genres={genreList}
+        watchedTmdbIds={watchedTmdbIds}
+        watchedMovies={serializedWatched}
+      />
     </div>
   );
 }
