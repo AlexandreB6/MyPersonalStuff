@@ -1,10 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { Search, RotateCcw, Loader2, Eye, Star, StarHalf, ChevronDown } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Search, RotateCcw, Loader2, Eye, Star, StarHalf, ChevronDown, Pencil } from "lucide-react";
 import { MovieGrid } from "./MovieGrid";
 import { MarkWatchedDialog } from "./MarkWatchedDialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import type { MovieCardData } from "./MovieCard";
+import { slugify } from "@/lib/tmdb";
 import type { TmdbGenre } from "@/lib/tmdb";
 
 interface WatchedMovie {
@@ -15,6 +19,7 @@ interface WatchedMovie {
   releaseYear: number | null;
   rating: number | null;
   watchedAt: string | null;
+  watchedPrecision: string;
   overview: string | null;
 }
 
@@ -49,8 +54,24 @@ export function CinemaClient({
   watchedTmdbIds: initialWatchedIds,
   watchedMovies: initialWatchedMovies,
 }: CinemaClientProps) {
-  // Tabs
-  const [activeTab, setActiveTab] = useState<"explore" | "collection">("explore");
+  // Tabs — synced with URL ?tab= param for back-navigation support
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const tabFromUrl = searchParams.get("tab") === "collection" ? "collection" : "explore";
+  const [activeTab, setActiveTabState] = useState<"explore" | "collection">(tabFromUrl);
+
+  // Sync tab state when URL changes (browser back/forward)
+  useEffect(() => {
+    setActiveTabState(tabFromUrl);
+  }, [tabFromUrl]);
+
+  const setActiveTab = useCallback((tab: "explore" | "collection") => {
+    setActiveTabState(tab);
+    const params = new URLSearchParams(searchParams.toString());
+    if (tab === "collection") params.set("tab", "collection");
+    else params.delete("tab");
+    router.push(`/cinema?${params.toString()}`, { scroll: false });
+  }, [searchParams, router]);
 
   // Explorer state
   const [movies, setMovies] = useState<MovieCardData[]>(initialMovies);
@@ -70,9 +91,41 @@ export function CinemaClient({
   const [watchedMovies, setWatchedMovies] = useState<WatchedMovie[]>(initialWatchedMovies);
   const [dialogMovie, setDialogMovie] = useState<MovieCardData | null>(null);
 
+  // Edit mode for collection items
+  const [editMovie, setEditMovie] = useState<WatchedMovie | null>(null);
+
   // Collection filter
   const [collectionSearch, setCollectionSearch] = useState("");
   const [collectionRatingFilter, setCollectionRatingFilter] = useState<number | null>(null);
+  const [collectionYearFilter, setCollectionYearFilter] = useState<number | null>(null);
+
+  // Re-fetch collection when the collection tab is active (handles stale data after back navigation)
+  useEffect(() => {
+    if (activeTab !== "collection") return;
+    const refresh = async () => {
+      try {
+        const res = await fetch("/api/movies");
+        if (!res.ok) return;
+        const movies = await res.json();
+        const mapped: WatchedMovie[] = movies
+          .filter((m: Record<string, unknown>) => m.tmdbId != null)
+          .map((m: Record<string, unknown>) => ({
+            tmdbId: m.tmdbId as number,
+            title: m.title as string,
+            posterPath: m.posterPath as string | null,
+            director: m.director as string | null,
+            releaseYear: m.releaseYear as number | null,
+            rating: m.rating as number | null,
+            watchedAt: m.watchedAt as string | null,
+            watchedPrecision: (m.watchedPrecision as string) ?? "day",
+            overview: m.overview as string | null,
+          }));
+        setWatchedMovies(mapped);
+        setWatchedIds(new Set(mapped.map((m) => m.tmdbId)));
+      } catch { /* ignore */ }
+    };
+    refresh();
+  }, [activeTab]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const isSearchMode = activeQuery.trim().length > 0;
@@ -175,7 +228,7 @@ export function CinemaClient({
   const hasActiveFilters = selectedYear || selectedGenres.length || selectedDuration !== null || selectedMinRating || sortBy !== "primary_release_date.desc" || activeQuery;
 
   // Mark watched handler
-  const handleMarkWatched = async (tmdbId: number, rating: number | null, watchedAt: string | null) => {
+  const handleMarkWatched = async (tmdbId: number, rating: number | null, watchedAt: string | null, watchedPrecision: "day" | "year" = "day") => {
     const movie = movies.find((m) => m.tmdbId === tmdbId);
     if (!movie) return;
 
@@ -191,6 +244,7 @@ export function CinemaClient({
         releaseYear: movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : null,
         rating,
         watchedAt: watchedAt || null,
+        watchedPrecision,
       }),
     });
 
@@ -206,6 +260,7 @@ export function CinemaClient({
           releaseYear: saved.releaseYear,
           rating: saved.rating,
           watchedAt: saved.watchedAt,
+          watchedPrecision: saved.watchedPrecision,
           overview: saved.overview,
         },
         ...prev.filter((m) => m.tmdbId !== tmdbId),
@@ -213,7 +268,9 @@ export function CinemaClient({
     }
   };
 
-  // Remove from collection
+  // Remove from collection with confirmation dialog
+  const [movieToRemove, setMovieToRemove] = useState<WatchedMovie | null>(null);
+
   const handleRemoveWatched = async (tmdbId: number) => {
     const res = await fetch("/api/movies", {
       method: "DELETE",
@@ -228,12 +285,43 @@ export function CinemaClient({
       });
       setWatchedMovies((prev) => prev.filter((m) => m.tmdbId !== tmdbId));
     }
+    setMovieToRemove(null);
   };
+
+  // Edit watched movie (rating / date)
+  const handleEditWatched = async (tmdbId: number, rating: number | null, watchedAt: string | null, watchedPrecision: "day" | "year" = "day") => {
+    const res = await fetch("/api/movies", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tmdbId, rating, watchedAt: watchedAt || null, watchedPrecision }),
+    });
+    if (res.ok) {
+      const saved = await res.json();
+      setWatchedMovies((prev) =>
+        prev.map((m) =>
+          m.tmdbId === tmdbId
+            ? { ...m, rating: saved.rating, watchedAt: saved.watchedAt, watchedPrecision: saved.watchedPrecision }
+            : m
+        )
+      );
+    }
+  };
+
+  // Available watched years (descending)
+  const collectionWatchedYears = [...new Set(
+    watchedMovies
+      .filter((m) => m.watchedAt)
+      .map((m) => new Date(m.watchedAt!).getFullYear())
+  )].sort((a, b) => b - a);
 
   // Filtered collection
   const filteredCollection = watchedMovies.filter((m) => {
     if (collectionSearch && !m.title.toLowerCase().includes(collectionSearch.toLowerCase())) return false;
     if (collectionRatingFilter && (m.rating ?? 0) < collectionRatingFilter) return false;
+    if (collectionYearFilter) {
+      if (!m.watchedAt) return false;
+      if (new Date(m.watchedAt).getFullYear() !== collectionYearFilter) return false;
+    }
     return true;
   });
 
@@ -449,6 +537,25 @@ export function CinemaClient({
                 </button>
               ))}
             </div>
+            {collectionWatchedYears.length > 0 && (
+              <div className="relative">
+                <select
+                  value={collectionYearFilter ?? ""}
+                  onChange={(e) => setCollectionYearFilter(e.target.value ? Number(e.target.value) : null)}
+                  className={`appearance-none rounded-full pl-3 pr-7 py-1.5 text-xs font-medium border transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                    collectionYearFilter
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
+                      : "bg-white/5 text-muted-foreground border-transparent hover:text-white"
+                  }`}
+                >
+                  <option value="" className="bg-neutral-900 text-white">Année de visionnage</option>
+                  {collectionWatchedYears.map((y) => (
+                    <option key={y} value={y} className="bg-neutral-900 text-white">{y}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 pointer-events-none text-muted-foreground" aria-hidden="true" />
+              </div>
+            )}
           </div>
 
           {filteredCollection.length === 0 ? (
@@ -460,8 +567,9 @@ export function CinemaClient({
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredCollection.map((movie) => (
-                <div
+                <Link
                   key={movie.tmdbId}
+                  href={`/movie/${slugify(movie.title, movie.tmdbId)}`}
                   className="flex items-start gap-4 rounded-xl border border-border/50 bg-card p-4 hover:bg-muted/30 transition-colors"
                 >
                   {movie.posterPath ? (
@@ -501,17 +609,28 @@ export function CinemaClient({
                     )}
                     {movie.watchedAt && (
                       <p className="text-xs text-muted-foreground/70">
-                        Vu le {new Date(movie.watchedAt).toLocaleDateString("fr-FR")}
+                        {movie.watchedPrecision === "year"
+                          ? `Vu en ${new Date(movie.watchedAt).getFullYear()}`
+                          : `Vu le ${new Date(movie.watchedAt).toLocaleDateString("fr-FR")}`}
                       </p>
                     )}
-                    <button
-                      onClick={() => handleRemoveWatched(movie.tmdbId)}
-                      className="text-xs text-red-400/70 hover:text-red-400 transition-colors mt-1 cursor-pointer"
-                    >
-                      Retirer
-                    </button>
+                    <div className="flex items-center gap-3 mt-1">
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditMovie(movie); }}
+                        className="text-xs text-muted-foreground hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1"
+                      >
+                        <Pencil className="w-3 h-3" aria-hidden="true" />
+                        Modifier
+                      </button>
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMovieToRemove(movie); }}
+                        className="text-xs text-red-400/70 hover:text-red-400 transition-colors cursor-pointer"
+                      >
+                        Retirer
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}
@@ -523,6 +642,40 @@ export function CinemaClient({
         movie={dialogMovie}
         onClose={() => setDialogMovie(null)}
         onConfirm={handleMarkWatched}
+      />
+
+      {/* Edit watched dialog */}
+      <MarkWatchedDialog
+        movie={editMovie ? {
+          tmdbId: editMovie.tmdbId,
+          title: editMovie.title,
+          posterPath: editMovie.posterPath,
+          originalTitle: null,
+          rating: 0,
+          runtimeMinutes: 0,
+          runtime: null,
+          director: editMovie.director,
+          cast: [],
+          releaseDate: editMovie.releaseYear ? `${editMovie.releaseYear}-01-01` : "",
+          genres: [],
+          overview: editMovie.overview ?? null,
+          watched: true,
+        } : null}
+        onClose={() => setEditMovie(null)}
+        onConfirm={handleEditWatched}
+        initialRating={editMovie?.rating}
+        initialWatchedAt={editMovie?.watchedAt}
+      />
+
+      {/* Confirm remove dialog */}
+      <ConfirmDialog
+        open={movieToRemove !== null}
+        title="Retirer de la collection"
+        description={movieToRemove ? `Voulez-vous vraiment retirer « ${movieToRemove.title} » de votre collection ?` : ""}
+        confirmLabel="Retirer"
+        cancelLabel="Annuler"
+        onConfirm={() => movieToRemove && handleRemoveWatched(movieToRemove.tmdbId)}
+        onCancel={() => setMovieToRemove(null)}
       />
     </div>
   );

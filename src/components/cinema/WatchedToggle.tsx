@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Eye, EyeOff, Star, StarHalf, X } from "lucide-react";
+import { Eye, EyeOff, Pencil, Star, StarHalf, X } from "lucide-react";
+
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1970 + 1 }, (_, i) => CURRENT_YEAR - i);
 
 interface WatchedToggleProps {
   tmdbId: number;
@@ -10,9 +13,11 @@ interface WatchedToggleProps {
   overview: string | null;
   director: string | null;
   releaseYear: number | null;
+  releaseDate: string | null;
   initialWatched: boolean;
   initialRating: number | null;
   initialWatchedAt: string | null;
+  initialWatchedPrecision: string;
 }
 
 /**
@@ -20,7 +25,7 @@ interface WatchedToggleProps {
  * Ouvre un dialog de notation au premier clic, ou retire directement si déjà vu.
  */
 export function WatchedToggle({
-  tmdbId, title, posterPath, overview, director, releaseYear,
+  tmdbId, title, posterPath, overview, director, releaseYear, releaseDate,
   initialWatched, initialRating, initialWatchedAt,
 }: WatchedToggleProps) {
   const [watched, setWatched] = useState(initialWatched);
@@ -32,7 +37,11 @@ export function WatchedToggle({
   // Dialog state
   const [dialogRating, setDialogRating] = useState<number | null>(initialRating);
   const [hoverRating, setHoverRating] = useState(0);
-  const [dialogDate, setDialogDate] = useState(initialWatchedAt?.slice(0, 10) ?? "");
+  const [dialogYear, setDialogYear] = useState<number | "">(
+    initialWatchedAt ? new Date(initialWatchedAt).getFullYear() : ""
+  );
+
+  const minYear = releaseYear ?? (releaseDate ? new Date(releaseDate).getFullYear() : null);
 
   const getRatingFromEvent = (e: React.MouseEvent<HTMLButtonElement>, starIndex: number) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -40,22 +49,28 @@ export function WatchedToggle({
     return x < rect.width / 2 ? starIndex - 0.5 : starIndex;
   };
 
-  const handleAdd = async () => {
+  const isEditing = watched && showDialog;
+
+  const handleSave = async () => {
     setSaving(true);
     try {
+      const dateValue = dialogYear ? `${dialogYear}-01-01` : null;
       const res = await fetch("/api/movies", {
-        method: "POST",
+        method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tmdbId, title, posterPath, overview, director, releaseYear,
-          rating: dialogRating,
-          watchedAt: dialogDate || null,
-        }),
+        body: isEditing
+          ? JSON.stringify({ tmdbId, rating: dialogRating, watchedAt: dateValue, watchedPrecision: "year" })
+          : JSON.stringify({
+              tmdbId, title, posterPath, overview, director, releaseYear,
+              rating: dialogRating,
+              watchedAt: dateValue,
+              watchedPrecision: "year",
+            }),
       });
       if (res.ok) {
         setWatched(true);
         setUserRating(dialogRating);
-        setUserWatchedAt(dialogDate || null);
+        setUserWatchedAt(dateValue);
         setShowDialog(false);
       }
     } finally {
@@ -95,10 +110,22 @@ export function WatchedToggle({
             )}
             {userWatchedAt && (
               <span className="text-green-400/60 font-normal ml-1">
-                le {new Date(userWatchedAt).toLocaleDateString("fr-FR")}
+                en {new Date(userWatchedAt).getFullYear()}
               </span>
             )}
           </div>
+          <button
+            onClick={() => {
+              setDialogRating(userRating);
+              setDialogYear(userWatchedAt ? new Date(userWatchedAt).getFullYear() : "");
+              setShowDialog(true);
+            }}
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors border border-white/10 cursor-pointer disabled:opacity-50"
+          >
+            <Pencil className="w-4 h-4" aria-hidden="true" />
+            Modifier
+          </button>
           <button
             onClick={handleRemove}
             disabled={saving}
@@ -112,7 +139,7 @@ export function WatchedToggle({
         <button
           onClick={() => {
             setDialogRating(null);
-            setDialogDate("");
+            setDialogYear("");
             setShowDialog(true);
           }}
           disabled={saving}
@@ -139,7 +166,7 @@ export function WatchedToggle({
             </button>
 
             <div>
-              <h2 className="text-lg font-bold leading-tight">Marquer comme vu</h2>
+              <h2 className="text-lg font-bold leading-tight">{isEditing ? "Modifier" : "Marquer comme vu"}</h2>
               <p className="text-sm text-muted-foreground mt-1">{title}</p>
             </div>
 
@@ -189,18 +216,21 @@ export function WatchedToggle({
               </div>
             </div>
 
-            {/* Date */}
+            {/* Year */}
             <div>
-              <label htmlFor="detail-watched-date" className="text-sm font-medium text-muted-foreground mb-2 block">
-                Date de visionnage <span className="text-muted-foreground/50 font-normal">(optionnel)</span>
+              <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                Année de visionnage <span className="text-muted-foreground/50 font-normal">(optionnel)</span>
               </label>
-              <input
-                id="detail-watched-date"
-                type="date"
-                value={dialogDate}
-                onChange={(e) => setDialogDate(e.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+              <select
+                value={dialogYear}
+                onChange={(e) => setDialogYear(e.target.value ? Number(e.target.value) : "")}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+              >
+                <option value="">Sélectionner une année</option>
+                {YEAR_OPTIONS.filter((y) => !minYear || y >= minYear).map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
             </div>
 
             <div className="flex gap-3 pt-2">
@@ -211,11 +241,11 @@ export function WatchedToggle({
                 Annuler
               </button>
               <button
-                onClick={handleAdd}
+                onClick={handleSave}
                 disabled={saving}
                 className="flex-1 rounded-lg bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 text-sm font-bold transition-colors disabled:opacity-50 cursor-pointer"
               >
-                {saving ? "Enregistrement…" : "Confirmer"}
+                {saving ? "Enregistrement…" : isEditing ? "Enregistrer" : "Confirmer"}
               </button>
             </div>
           </div>

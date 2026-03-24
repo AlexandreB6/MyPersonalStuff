@@ -1,30 +1,52 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Star, StarHalf, X } from "lucide-react";
 import type { MovieCardData } from "./MovieCard";
 
 interface MarkWatchedDialogProps {
   movie: MovieCardData | null;
   onClose: () => void;
-  onConfirm: (tmdbId: number, rating: number | null, watchedAt: string | null) => Promise<void>;
+  onConfirm: (tmdbId: number, rating: number | null, watchedAt: string | null, watchedPrecision: "day" | "year") => Promise<void>;
+  /** Pre-fill values for edit mode */
+  initialRating?: number | null;
+  initialWatchedAt?: string | null;
 }
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEAR_OPTIONS = Array.from({ length: CURRENT_YEAR - 1970 + 1 }, (_, i) => CURRENT_YEAR - i);
+
 /**
- * Dialog pour marquer un film comme vu — note demi-étoiles (optionnelle) + date optionnelle.
+ * Dialog pour marquer un film comme vu — note demi-étoiles (optionnelle) + année optionnelle.
  */
-export function MarkWatchedDialog({ movie, onClose, onConfirm }: MarkWatchedDialogProps) {
-  const [rating, setRating] = useState<number | null>(null);
+export function MarkWatchedDialog({ movie, onClose, onConfirm, initialRating, initialWatchedAt }: MarkWatchedDialogProps) {
+  const [rating, setRating] = useState<number | null>(initialRating ?? null);
   const [hoverRating, setHoverRating] = useState(0);
-  const [watchedAt, setWatchedAt] = useState("");
+  const [watchedYear, setWatchedYear] = useState<number | "">(
+    initialWatchedAt ? new Date(initialWatchedAt).getFullYear() : ""
+  );
   const [saving, setSaving] = useState(false);
+  const isEditMode = initialRating !== undefined || initialWatchedAt !== undefined;
+
+  // Reset state when movie changes (new dialog open)
+  const movieId = movie?.tmdbId ?? null;
+  const prevMovieIdRef = useRef(movieId);
+  if (movieId !== prevMovieIdRef.current) {
+    prevMovieIdRef.current = movieId;
+    setRating(initialRating ?? null);
+    setWatchedYear(initialWatchedAt ? new Date(initialWatchedAt).getFullYear() : "");
+    setHoverRating(0);
+  }
 
   if (!movie) return null;
+
+  const releaseYear = movie.releaseDate ? new Date(movie.releaseDate).getFullYear() : null;
 
   const handleConfirm = async () => {
     setSaving(true);
     try {
-      await onConfirm(movie.tmdbId, rating, watchedAt || null);
+      const dateValue = watchedYear ? `${watchedYear}-01-01` : null;
+      await onConfirm(movie.tmdbId, rating, dateValue, "year");
       onClose();
     } finally {
       setSaving(false);
@@ -66,7 +88,7 @@ export function MarkWatchedDialog({ movie, onClose, onConfirm }: MarkWatchedDial
             />
           )}
           <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold leading-tight line-clamp-2">Marquer comme vu</h2>
+            <h2 className="text-lg font-bold leading-tight line-clamp-2">{isEditMode ? "Modifier" : "Marquer comme vu"}</h2>
             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{movie.title}</p>
           </div>
         </div>
@@ -123,18 +145,21 @@ export function MarkWatchedDialog({ movie, onClose, onConfirm }: MarkWatchedDial
           </div>
         </div>
 
-        {/* Date (optional) */}
+        {/* Year (optional) */}
         <div>
-          <label htmlFor="watched-date" className="text-sm font-medium text-muted-foreground mb-2 block">
-            Date de visionnage <span className="text-muted-foreground/50 font-normal">(optionnel)</span>
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+            Année de visionnage <span className="text-muted-foreground/50 font-normal">(optionnel)</span>
           </label>
-          <input
-            id="watched-date"
-            type="date"
-            value={watchedAt}
-            onChange={(e) => setWatchedAt(e.target.value)}
-            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
+          <select
+            value={watchedYear}
+            onChange={(e) => setWatchedYear(e.target.value ? Number(e.target.value) : "")}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+          >
+            <option value="">Sélectionner une année</option>
+            {YEAR_OPTIONS.filter((y) => !releaseYear || y >= releaseYear).map((y) => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
         </div>
 
         {/* Actions */}
@@ -150,7 +175,7 @@ export function MarkWatchedDialog({ movie, onClose, onConfirm }: MarkWatchedDial
             disabled={saving}
             className="flex-1 rounded-lg bg-green-600 hover:bg-green-500 text-white px-4 py-2.5 text-sm font-bold transition-colors disabled:opacity-50 cursor-pointer"
           >
-            {saving ? "Enregistrement…" : "Confirmer"}
+            {saving ? "Enregistrement…" : isEditMode ? "Enregistrer" : "Confirmer"}
           </button>
         </div>
       </div>

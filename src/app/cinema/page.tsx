@@ -25,6 +25,7 @@ export default async function CinemaPage() {
         releaseYear: true,
         rating: true,
         watchedAt: true,
+        watchedPrecision: true,
         overview: true,
       },
     }),
@@ -46,10 +47,8 @@ export default async function CinemaPage() {
     })
   );
 
-  const today = new Date().toISOString().slice(0, 10);
   const initialMovies: MovieCardData[] = detailed
     .filter((m) => m !== null)
-    .filter((movie) => movie.release_date && movie.release_date <= today)
     .map((movie) => {
       const director = getDirector(movie);
       return {
@@ -79,6 +78,7 @@ export default async function CinemaPage() {
       releaseYear: m.releaseYear,
       rating: m.rating,
       watchedAt: m.watchedAt?.toISOString() ?? null,
+      watchedPrecision: m.watchedPrecision,
       overview: m.overview ?? null,
     }));
 

@@ -53,7 +53,8 @@ model Movie {
   overview    String?
   director    String?
   releaseYear Int?
-  watchedAt   DateTime? /// Date à laquelle le film a été vu (optionnelle)
+  watchedAt        DateTime? /// Date à laquelle le film a été vu (optionnelle)
+  watchedPrecision String    @default("day") /// Précision de la date : "day" ou "year"
   rating      Float?    /// Note personnelle (0.5–5, par pas de 0.5)
   owned       Boolean   @default(false) /// Possède un exemplaire physique
   ownedFormat String?  /// Format possédé (DVD, Blu-ray, etc.)

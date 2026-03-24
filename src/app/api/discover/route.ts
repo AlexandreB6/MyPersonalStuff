@@ -46,10 +46,8 @@ export async function GET(req: NextRequest) {
     })
   );
 
-  const today = new Date().toISOString().slice(0, 10);
   const movies = detailed
     .filter((m) => m !== null)
-    .filter((movie) => movie.release_date && movie.release_date <= today)
     .map((movie) => {
       const director = getDirector(movie);
       return {

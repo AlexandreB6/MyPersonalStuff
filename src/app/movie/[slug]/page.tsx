@@ -8,7 +8,7 @@ import {
 } from "@/lib/tmdb";
 import { prisma } from "@/lib/prisma";
 import Image from "next/image";
-import Link from "next/link";
+import { BackToCinema } from "@/components/cinema/BackToCinema";
 import {
   ChevronLeft,
   Star,
@@ -65,13 +65,7 @@ export default async function MovieDetailPage({ params }: Props) {
           <div className="absolute inset-0 bg-gradient-to-r from-background/60 to-transparent" />
 
           {/* Back link — top-left of hero */}
-          <Link
-            href="/cinema"
-            className="absolute top-4 left-4 sm:left-6 z-10 inline-flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors bg-black/30 backdrop-blur-sm px-3 py-1.5 rounded-full"
-          >
-            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-            Cinéma
-          </Link>
+          <BackToCinema />
         </div>
 
         {/* Content overlay */}
@@ -108,26 +102,21 @@ export default async function MovieDetailPage({ params }: Props) {
               )}
 
               {/* Métadonnées : note, durée, date, pays */}
-              <div className="flex flex-wrap items-center gap-3 text-sm">
-                <span className="inline-flex items-center gap-1.5 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full font-bold">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-white/60">
+                <span className="inline-flex items-center gap-1.5 text-amber-400 font-bold">
                   <Star className="w-4 h-4 fill-amber-400" aria-hidden="true" />
-                  {movie.vote_average.toFixed(1)}
-                  <span className="text-amber-400/60 font-normal ml-0.5">
-                    / 10
-                  </span>
-                </span>
-                <span className="text-white/40 text-xs">
-                  {movie.vote_count.toLocaleString("fr-FR")} votes
+                  {movie.vote_average.toFixed(1)}/10
+                  <span className="text-white/30 font-normal text-xs">({movie.vote_count.toLocaleString("fr-FR")})</span>
                 </span>
                 {movie.runtime > 0 && (
-                  <span className="inline-flex items-center gap-1.5 text-white/70">
-                    <Clock className="w-4 h-4" aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" aria-hidden="true" />
                     {formatRuntime(movie.runtime)}
                   </span>
                 )}
                 {movie.release_date && (
-                  <span className="inline-flex items-center gap-1.5 text-white/70">
-                    <Calendar className="w-4 h-4" aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5" aria-hidden="true" />
                     {new Date(movie.release_date).toLocaleDateString("fr-FR", {
                       year: "numeric",
                       month: "long",
@@ -136,8 +125,8 @@ export default async function MovieDetailPage({ params }: Props) {
                   </span>
                 )}
                 {movie.production_countries?.[0] && (
-                  <span className="inline-flex items-center gap-1.5 text-white/70">
-                    <Globe className="w-4 h-4" aria-hidden="true" />
+                  <span className="inline-flex items-center gap-1">
+                    <Globe className="w-3.5 h-3.5" aria-hidden="true" />
                     {movie.production_countries[0].name}
                   </span>
                 )}
@@ -155,56 +144,11 @@ export default async function MovieDetailPage({ params }: Props) {
                 ))}
               </div>
 
-              {/* Liens externes */}
-              <div className="flex flex-wrap items-center gap-3 pt-2">
-                {movie.imdb_id && (
-                  <a
-                    href={`https://www.imdb.com/title/${movie.imdb_id}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Voir sur IMDb (ouvre dans un nouvel onglet)"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 text-sm font-semibold transition-colors border border-yellow-500/20"
-                  >
-                    <span className="font-black text-xs">IMDb</span>
-                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                  </a>
-                )}
-                <a
-                  href={`https://www.themoviedb.org/movie/${movie.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Voir sur TMDB (ouvre dans un nouvel onglet)"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors border border-white/10"
-                >
-                  TMDB
-                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                </a>
-                <a
-                  href={`https://www.allocine.fr/rechercher/?q=${encodeURIComponent(movie.title)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Rechercher sur AlloCiné (ouvre dans un nouvel onglet)"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors border border-white/10"
-                >
-                  AlloCiné
-                  <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                </a>
-                {movie.homepage && (
-                  <a
-                    href={movie.homepage}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label="Site officiel (ouvre dans un nouvel onglet)"
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors border border-white/10"
-                  >
-                    Site officiel
-                    <ExternalLink className="w-3.5 h-3.5" aria-hidden="true" />
-                  </a>
-                )}
-              </div>
+              {/* Séparateur */}
+              <div className="border-t border-white/10 my-3" />
 
-              {/* Vu / Retirer */}
-              <div className="pt-1">
+              {/* Vu / Modifier / Retirer */}
+              <div>
                 <WatchedToggle
                   tmdbId={movie.id}
                   title={movie.title}
@@ -216,12 +160,54 @@ export default async function MovieDetailPage({ params }: Props) {
                       ? new Date(movie.release_date).getFullYear()
                       : null
                   }
+                  releaseDate={movie.release_date ?? null}
                   initialWatched={!!watchedMovie}
                   initialRating={watchedMovie?.rating ?? null}
                   initialWatchedAt={
                     watchedMovie?.watchedAt?.toISOString() ?? null
                   }
+                  initialWatchedPrecision={watchedMovie?.watchedPrecision ?? "day"}
                 />
+              </div>
+
+              {/* Liens externes — compact */}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-white/40">
+                {movie.imdb_id && (
+                  <a
+                    href={`https://www.imdb.com/title/${movie.imdb_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-white/70 transition-colors"
+                  >
+                    IMDb <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                  </a>
+                )}
+                <a
+                  href={`https://www.themoviedb.org/movie/${movie.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-white/70 transition-colors"
+                >
+                  TMDB <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                </a>
+                <a
+                  href={`https://www.allocine.fr/rechercher/?q=${encodeURIComponent(movie.title)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 hover:text-white/70 transition-colors"
+                >
+                  AlloCiné <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                </a>
+                {movie.homepage && (
+                  <a
+                    href={movie.homepage}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-white/70 transition-colors"
+                  >
+                    Site officiel <ExternalLink className="w-3 h-3" aria-hidden="true" />
+                  </a>
+                )}
               </div>
             </div>
           </div>
