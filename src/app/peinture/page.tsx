@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PAINT_RANGES } from "@/data/paint-ranges";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Peinture — MyPersonalStuff",
   description: "Inventaire de peintures miniatures",
