@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     },
   });
   revalidatePath("/cinema");
+  revalidatePath("/");
   return NextResponse.json(movie);
 }
 
@@ -76,5 +77,6 @@ export async function DELETE(req: NextRequest) {
   }
   await prisma.movie.delete({ where: { tmdbId } });
   revalidatePath("/cinema");
+  revalidatePath("/");
   return NextResponse.json({ ok: true });
 }

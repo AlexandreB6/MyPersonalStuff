@@ -5,6 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 /** Liste les peintures possédées, filtrées par range optionnelle. */
@@ -26,6 +27,8 @@ export async function POST(req: NextRequest) {
     create: { paintId, range, quantity },
     update: { quantity },
   });
+  revalidatePath("/peinture");
+  revalidatePath("/");
   return NextResponse.json(paint);
 }
 
@@ -43,6 +46,8 @@ export async function PUT(req: NextRequest) {
     where: { paintId_range: { paintId, range } },
     data,
   });
+  revalidatePath("/peinture");
+  revalidatePath("/");
   return NextResponse.json(paint);
 }
 
@@ -55,5 +60,7 @@ export async function DELETE(req: NextRequest) {
   await prisma.ownedPaint.delete({
     where: { paintId_range: { paintId, range } },
   });
+  revalidatePath("/peinture");
+  revalidatePath("/");
   return NextResponse.json({ ok: true });
 }

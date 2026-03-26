@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 
 /** Liste tous les mangas de la collection. */
@@ -26,6 +27,8 @@ export async function POST(req: NextRequest) {
     create: { malId, title, titleJapanese, coverImage, author, volumes, chapters, synopsis, genres, demographic, score, status },
     update: { title, titleJapanese, coverImage, author, volumes, chapters, synopsis, genres, demographic, score, status },
   });
+  revalidatePath("/manga");
+  revalidatePath("/");
   return NextResponse.json(manga);
 }
 
@@ -44,6 +47,8 @@ export async function PUT(req: NextRequest) {
     where: { malId },
     data,
   });
+  revalidatePath("/manga");
+  revalidatePath("/");
   return NextResponse.json(manga);
 }
 
@@ -54,5 +59,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "malId required" }, { status: 400 });
   }
   await prisma.manga.delete({ where: { malId } });
+  revalidatePath("/manga");
+  revalidatePath("/");
   return NextResponse.json({ ok: true });
 }
