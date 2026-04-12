@@ -228,7 +228,7 @@ export function WatchedToggle({
               <select
                 value={dialogYear}
                 onChange={(e) => setDialogYear(e.target.value ? Number(e.target.value) : "")}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-base sm:text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer"
               >
                 <option value="">Sélectionner une année</option>
                 {YEAR_OPTIONS.filter((y) => !minYear || y >= minYear).map((y) => (
