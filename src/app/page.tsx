@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Film, Paintbrush, BookOpen, ArrowRight } from "lucide-react";
-import { mangaSlugify } from "@/lib/jikan";
+import { makeSlug } from "@/lib/utils";
 import { RANGE_MAP } from "@/data/paint-ranges";
 
 export const dynamic = "force-dynamic";
@@ -156,7 +156,7 @@ export default async function DashboardPage() {
             <div className="space-y-2">
               {mangas.map((manga) => {
                 const owned = JSON.parse(manga.ownedVolumesMap) as number[];
-                const slug = mangaSlugify(manga.title, manga.malId);
+                const slug = makeSlug(manga.title, manga.id);
                 return (
                   <Link
                     key={manga.id}
