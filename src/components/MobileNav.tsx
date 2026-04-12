@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Menu, X, Film, Paintbrush, BookOpen } from "lucide-react";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 /** Liens de navigation affichés dans le menu mobile */
 const NAV_ITEMS = [
@@ -59,6 +60,10 @@ export function MobileNav() {
               {label}
             </Link>
           ))}
+          <div className="border-t border-border/50 pt-2 mt-2 flex items-center gap-3 px-3">
+            <span className="text-sm text-muted-foreground">Thème</span>
+            <ThemeToggle />
+          </div>
         </nav>
       )}
     </div>
