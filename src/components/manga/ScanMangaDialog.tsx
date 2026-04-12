@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { ScanBarcode, X, Loader2, RotateCcw } from "lucide-react";
+import { ScanBarcode, X, Loader2, RotateCcw, Info } from "lucide-react";
 import { MangaSearchResults } from "./MangaSearchResults";
 import type { JikanManga } from "@/lib/jikan";
 
@@ -25,11 +25,13 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("scanning");
   const [results, setResults] = useState<JikanManga[]>([]);
+  const [source, setSource] = useState<"jikan" | "anilist">("jikan");
   const [errorMsg, setErrorMsg] = useState("");
   const [isbn, setIsbn] = useState("");
 
   const resetState = useCallback(() => {
     setResults([]);
+    setSource("jikan");
     setErrorMsg("");
     setIsbn("");
     isProcessingRef.current = false;
@@ -97,11 +99,12 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
       }
       const data = await res.json();
       if (!data.results?.length) {
-        setErrorMsg("Aucun manga trouvé sur MyAnimeList pour cet ISBN");
+        setErrorMsg("Aucun manga trouvé pour cet ISBN");
         setPhase("error");
         return;
       }
       setResults(data.results);
+      if (data.source) setSource(data.source);
       setPhase("results");
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : "Erreur réseau");
@@ -213,6 +216,12 @@ export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
 
               {phase === "results" && (
                 <div className="space-y-3">
+                  {source === "anilist" && (
+                    <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300">
+                      <Info className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                      Résultats via AniList (MyAnimeList indisponible)
+                    </div>
+                  )}
                   <MangaSearchResults results={results} ownedMalIds={ownedMalIds} onAdd={onAdd} />
                   <button
                     onClick={goToScanning}

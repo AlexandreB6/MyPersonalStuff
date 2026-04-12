@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, TriangleAlert } from "lucide-react";
 import { MangaCard, type MangaItem } from "./MangaCard";
 import { AddMangaDialog } from "./AddMangaDialog";
 import { ScanMangaDialog } from "./ScanMangaDialog";
@@ -10,6 +10,7 @@ import type { JikanManga } from "@/lib/jikan";
 
 interface Props {
   initialMangas: MangaItem[];
+  jikanAvailable: boolean;
 }
 
 /** Statuts de filtrage */
@@ -23,7 +24,7 @@ const STATUS_OPTIONS = [
  * Client component principal pour la page Manga.
  * Gère la collection, les filtres et les actions CRUD optimistes.
  */
-export function MangaClient({ initialMangas }: Props) {
+export function MangaClient({ initialMangas, jikanAvailable }: Props) {
   const [mangas, setMangas] = useState<MangaItem[]>(initialMangas);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -131,6 +132,16 @@ export function MangaClient({ initialMangas }: Props) {
           <AddMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
         </div>
       </div>
+
+      {/* Avertissement API Jikan */}
+      {!jikanAvailable && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          <TriangleAlert className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+          <p>
+            L&apos;API MyAnimeList (Jikan) est actuellement indisponible. La recherche utilise AniList comme source alternative — certains résultats peuvent différer.
+          </p>
+        </div>
+      )}
 
       {/* Filtres */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">

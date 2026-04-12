@@ -35,13 +35,27 @@ interface JikanSearchResponse {
   };
 }
 
-/** Recherche des mangas via Jikan. */
-export async function searchManga(query: string): Promise<JikanManga[]> {
-  const url = `${JIKAN_BASE_URL}/manga?q=${encodeURIComponent(query)}&limit=10&sfw=true&type=manga`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Jikan search failed: ${res.status}`);
-  const data: JikanSearchResponse = await res.json();
-  return data.data;
+export type MangaSearchSource = "jikan" | "anilist";
+
+export interface MangaSearchResult {
+  data: JikanManga[];
+  source: MangaSearchSource;
+}
+
+/** Recherche des mangas via Jikan, avec fallback AniList si Jikan est indisponible. */
+export async function searchManga(query: string): Promise<MangaSearchResult> {
+  try {
+    const url = `${JIKAN_BASE_URL}/manga?q=${encodeURIComponent(query)}&limit=10&sfw=true&type=manga`;
+    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) throw new Error(`Jikan search failed: ${res.status}`);
+    const data: JikanSearchResponse = await res.json();
+    return { data: data.data, source: "jikan" };
+  } catch {
+    // Fallback AniList
+    const { searchMangaAniList } = await import("./anilist");
+    const data = await searchMangaAniList(query);
+    return { data, source: "anilist" };
+  }
 }
 
 /** Récupère les détails d'un manga par son ID MAL. */

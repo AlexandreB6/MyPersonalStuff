@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const results = await searchManga(q.trim());
-    return NextResponse.json(results);
+    const { data, source } = await searchManga(q.trim());
+    return NextResponse.json({ data, source });
   } catch {
     return NextResponse.json({ error: "Jikan API error" }, { status: 502 });
   }
