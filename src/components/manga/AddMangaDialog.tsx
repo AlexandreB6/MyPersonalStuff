@@ -132,7 +132,7 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   aria-label="Rechercher un manga"
-                  className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                  className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-3 text-base sm:text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
             </div>

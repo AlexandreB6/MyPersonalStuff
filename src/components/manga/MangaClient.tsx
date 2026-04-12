@@ -153,7 +153,7 @@ export function MangaClient({ initialMangas, jikanAvailable }: Props) {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             aria-label="Rechercher dans la collection"
-            className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            className="h-9 w-full rounded-md border border-input bg-background pl-9 pr-3 text-base sm:text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
           />
         </div>
         <div className="flex items-center gap-1.5">

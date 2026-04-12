@@ -289,7 +289,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
                   value={extraVolume}
                   onChange={(e) => setExtraVolume(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addExtraVolume()}
-                  className="h-9 w-28 rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                  className="h-9 w-28 rounded-md border border-input bg-background px-3 text-base sm:text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
                 />
                 <button
                   onClick={addExtraVolume}
@@ -311,7 +311,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
               onBlur={saveNotes}
               placeholder="Ajouter des notes personnelles..."
               rows={4}
-              className="w-full max-w-xl rounded-lg border border-input bg-background p-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-y"
+              className="w-full max-w-xl rounded-lg border border-input bg-background p-3 text-base sm:text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring resize-y"
             />
             {savingNotes && <p className="text-xs text-muted-foreground mt-1">Sauvegarde...</p>}
           </section>
