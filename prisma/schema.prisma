@@ -23,25 +23,28 @@ model OwnedPaint {
   @@unique([paintId, range])
 }
 
-/// Manga suivi dans la collection personnelle
+/// Manga suivi dans la collection personnelle (source: Google Books FR + BnF SRU)
 model Manga {
-  id             Int      @id @default(autoincrement())
-  malId          Int      @unique /// Identifiant MyAnimeList
-  title          String
-  titleJapanese  String?
-  coverImage     String?  /// URL image couverture
-  author         String?
-  volumes        Int?     /// Nb volumes total (null si en cours)
-  chapters       Int?     /// Nb chapitres total
-  synopsis       String?
-  genres         String?  /// Genres séparés par virgule
-  demographic    String?  /// Démographie : "Shounen", "Seinen", "Shoujo", "Josei"
-  score          Float?   /// Score MAL
-  status         String?  /// "Publishing", "Finished", etc.
-  ownedVolumesMap String  @default("[]") /// JSON array des numéros de volumes possédés, ex: "[1,2,3,5]"
-  notes          String?  /// Notes perso
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id              Int      @id @default(autoincrement())
+  googleBooksId   String?  @unique /// ID Google Books de la série (optionnel, pour preview avant ajout)
+  title           String   /// Titre de la série
+  titleJapanese   String?
+  coverImage      String?  /// URL image couverture
+  author          String?
+  publisher       String?  /// Éditeur FR (Glénat, Kana, Pika, Panini, Planète BD…)
+  editionLabel    String?  /// Édition (Standard, Deluxe, Intégrale, Perfect Edition…)
+  volumes         Int?     /// Nb volumes total de cette édition FR (null si en cours)
+  synopsis        String?
+  genres          String?  /// Genres séparés par virgule
+  demographic     String?  /// Démographie : "Shounen", "Seinen", "Shoujo", "Josei"
+  status          String?  /// "Publishing", "Finished", etc.
+  source          String   @default("google-books") /// "google-books" | "bnf"
+  ownedVolumesMap String   @default("[]") /// JSON array des numéros de volumes possédés, ex: "[1,2,3,5]"
+  notes           String?  /// Notes perso
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([title, publisher, editionLabel])
 }
 
 /// Film suivi dans la collection personnelle

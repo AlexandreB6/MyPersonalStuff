@@ -1,29 +1,27 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Search, Plus, X, Loader2, Info } from "lucide-react";
 import { MangaSearchResults } from "./MangaSearchResults";
-import { DEMOGRAPHIC_OPTIONS } from "@/lib/utils";
-import type { JikanManga } from "@/lib/jikan";
+import type { MangaSeries } from "@/lib/google-books";
 
 interface AddMangaDialogProps {
-  ownedMalIds: Set<number>;
-  onAdd: (manga: JikanManga) => void;
+  ownedGoogleBooksIds: Set<string>;
+  onAdd: (series: MangaSeries) => void;
 }
 
 /**
- * Dialog pour rechercher et ajouter un manga via l'API Jikan.
+ * Dialog pour rechercher et ajouter une série manga via Google Books (FR) / BnF.
  */
-export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
+export function AddMangaDialog({ ownedGoogleBooksIds, onAdd }: AddMangaDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<JikanManga[]>([]);
+  const [results, setResults] = useState<MangaSeries[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [source, setSource] = useState<"jikan" | "anilist">("jikan");
-  const [demographicFilter, setDemographicFilter] = useState<string>("all");
+  const [source, setSource] = useState<"google-books" | "bnf">("google-books");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const openDialog = useCallback(() => {
@@ -38,16 +36,9 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
     setQuery("");
     setResults([]);
     setError(null);
-    setSource("jikan");
-    setDemographicFilter("all");
+    setSource("google-books");
   }, []);
 
-  const filteredResults = useMemo(() => {
-    if (demographicFilter === "all") return results;
-    return results.filter((m) => m.demographics?.[0]?.name === demographicFilter);
-  }, [results, demographicFilter]);
-
-  // Recherche avec debounce
   useEffect(() => {
     if (query.trim().length < 2) {
       setResults([]);
@@ -79,7 +70,6 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
     return () => clearTimeout(debounceRef.current);
   }, [query]);
 
-  // Fermer avec Escape
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
@@ -109,9 +99,8 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
       >
         {open && (
           <div className="flex flex-col max-h-[85vh]">
-            {/* Header */}
             <div className="flex items-center justify-between border-b border-border px-5 py-4">
-              <h2 className="text-lg font-semibold">Ajouter un manga</h2>
+              <h2 className="text-lg font-semibold">Ajouter un manga (éditions FR)</h2>
               <button
                 onClick={closeDialog}
                 aria-label="Fermer"
@@ -121,7 +110,6 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
               </button>
             </div>
 
-            {/* Recherche */}
             <div className="px-5 pt-4 pb-2">
               <div className="relative">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -137,35 +125,13 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
               </div>
             </div>
 
-            {/* Notice fallback AniList */}
-            {!loading && source === "anilist" && results.length > 0 && (
+            {!loading && source === "bnf" && results.length > 0 && (
               <div className="flex items-center gap-2 mx-5 mb-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300">
                 <Info className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-                Résultats via AniList (MyAnimeList indisponible)
+                Résultats via BnF (Google Books indisponible)
               </div>
             )}
 
-            {/* Filtre démographie */}
-            {results.length > 0 && !loading && (
-              <div className="flex items-center gap-1.5 px-5 pb-2">
-                {DEMOGRAPHIC_OPTIONS.map(({ value, label }) => (
-                  <button
-                    key={value}
-                    onClick={() => setDemographicFilter(value)}
-                    aria-pressed={demographicFilter === value}
-                    className={`rounded-full px-3 py-1 text-xs font-medium cursor-pointer transition-colors ${
-                      demographicFilter === value
-                        ? "bg-violet-500 text-white"
-                        : "bg-muted text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Résultats */}
             <div className="flex-1 overflow-y-auto px-5 pb-5">
               {loading && (
                 <div className="flex items-center justify-center py-12">
@@ -186,14 +152,12 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
                 </p>
               )}
 
-              {!loading && results.length > 0 && filteredResults.length === 0 && (
-                <p className="py-12 text-center text-sm text-muted-foreground">
-                  Aucun résultat pour ce filtre
-                </p>
-              )}
-
-              {!loading && filteredResults.length > 0 && (
-                <MangaSearchResults results={filteredResults} ownedMalIds={ownedMalIds} onAdd={onAdd} />
+              {!loading && results.length > 0 && (
+                <MangaSearchResults
+                  results={results}
+                  ownedGoogleBooksIds={ownedGoogleBooksIds}
+                  onAdd={onAdd}
+                />
               )}
 
               {!loading && query.trim().length < 2 && (
