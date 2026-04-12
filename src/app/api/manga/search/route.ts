@@ -17,11 +17,12 @@ export async function GET(req: NextRequest) {
 
   let data: MangaSeries[] = [];
   let source: MangaSearchSource = "google-books";
+  let gbError: string | null = null;
 
   try {
     data = await searchMangaSeries(q.trim());
-  } catch {
-    // Google Books down → fallback BnF
+  } catch (err) {
+    gbError = err instanceof Error ? err.message : String(err);
   }
 
   if (data.length === 0) {
@@ -30,11 +31,19 @@ export async function GET(req: NextRequest) {
       source = "bnf";
     } catch {
       return NextResponse.json(
-        { error: "Impossible de contacter les APIs de recherche manga" },
+        { error: "Impossible de contacter les APIs de recherche manga", gbError, hasKey: Boolean(process.env.GOOGLE_BOOKS_API_KEY) },
         { status: 502 },
       );
     }
   }
 
-  return NextResponse.json({ data, source });
+  return NextResponse.json({
+    data,
+    source,
+    debug: {
+      hasKey: Boolean(process.env.GOOGLE_BOOKS_API_KEY),
+      keyLength: process.env.GOOGLE_BOOKS_API_KEY?.length ?? 0,
+      gbError,
+    },
+  });
 }
