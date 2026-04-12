@@ -48,8 +48,14 @@ export async function GET(request: NextRequest) {
   const title: string = gbData.items[0].volumeInfo.title;
   const cleanedTitle = cleanTitle(title);
 
-  // 2. Jikan search
-  const results = await searchManga(cleanedTitle);
-
-  return NextResponse.json({ title, cleanedTitle, results });
+  // 2. Jikan search (with AniList fallback)
+  try {
+    const { data: results, source } = await searchManga(cleanedTitle);
+    return NextResponse.json({ title, cleanedTitle, results, source });
+  } catch {
+    return NextResponse.json(
+      { error: "Impossible de contacter les APIs de recherche manga" },
+      { status: 502 },
+    );
+  }
 }

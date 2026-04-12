@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
-import { Search, Plus, X, Loader2 } from "lucide-react";
+import { Search, Plus, X, Loader2, Info } from "lucide-react";
 import { MangaSearchResults } from "./MangaSearchResults";
 import { DEMOGRAPHIC_OPTIONS } from "@/lib/utils";
 import type { JikanManga } from "@/lib/jikan";
@@ -21,6 +21,8 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<JikanManga[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<"jikan" | "anilist">("jikan");
   const [demographicFilter, setDemographicFilter] = useState<string>("all");
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -35,6 +37,8 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
     dialogRef.current?.close();
     setQuery("");
     setResults([]);
+    setError(null);
+    setSource("jikan");
     setDemographicFilter("all");
   }, []);
 
@@ -53,12 +57,20 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       setLoading(true);
+      setError(null);
       try {
         const res = await fetch(`/api/manga/search?q=${encodeURIComponent(query.trim())}`);
         if (res.ok) {
-          const data = await res.json();
-          setResults(data);
+          const json = await res.json();
+          setResults(json.data);
+          setSource(json.source);
+        } else {
+          setResults([]);
+          setError("Impossible de contacter l\u2019API de recherche. Réessayez plus tard.");
         }
+      } catch {
+        setResults([]);
+        setError("Erreur réseau. Vérifiez votre connexion.");
       } finally {
         setLoading(false);
       }
@@ -125,6 +137,14 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
               </div>
             </div>
 
+            {/* Notice fallback AniList */}
+            {!loading && source === "anilist" && results.length > 0 && (
+              <div className="flex items-center gap-2 mx-5 mb-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300">
+                <Info className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+                Résultats via AniList (MyAnimeList indisponible)
+              </div>
+            )}
+
             {/* Filtre démographie */}
             {results.length > 0 && !loading && (
               <div className="flex items-center gap-1.5 px-5 pb-2">
@@ -154,9 +174,15 @@ export function AddMangaDialog({ ownedMalIds, onAdd }: AddMangaDialogProps) {
                 </div>
               )}
 
-              {!loading && query.trim().length >= 2 && results.length === 0 && (
+              {!loading && !error && query.trim().length >= 2 && results.length === 0 && (
                 <p className="py-12 text-center text-sm text-muted-foreground">
                   Aucun résultat pour &ldquo;{query}&rdquo;
+                </p>
+              )}
+
+              {!loading && error && (
+                <p className="py-12 text-center text-sm text-destructive">
+                  {error}
                 </p>
               )}
 
