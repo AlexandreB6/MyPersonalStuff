@@ -153,9 +153,15 @@ async function fetchGB(query: string, maxResults = 40): Promise<GBVolume[]> {
   const keyParam = apiKey ? `&key=${apiKey}` : "";
   const url = `${GB_BASE}?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=${maxResults}&printType=books${keyParam}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
-  if (!res.ok) throw new Error(`Google Books failed: ${res.status}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`Google Books ${res.status}: ${body.slice(0, 300)}`);
+  }
   const data: GBSearchResponse = await res.json();
-  return data.items ?? [];
+  if (!data.items || data.items.length === 0) {
+    throw new Error(`Google Books empty response: totalItems=${data.totalItems}`);
+  }
+  return data.items;
 }
 
 /**
