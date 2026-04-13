@@ -170,12 +170,18 @@ async function fetchGB(query: string, maxResults = 40): Promise<GBVolume[]> {
  */
 export async function searchMangaSeries(query: string): Promise<MangaSeries[]> {
   const items = await fetchGB(`${query} manga`, 40);
+  const rawCount = items.length;
+  const languages = Array.from(new Set(items.map((i) => i.volumeInfo.language ?? "?")));
+  let filteredByLang = 0;
 
   // Groupe les volumes par clé série (titre normalisé + éditeur + édition)
   const groups = new Map<string, GBVolume[]>();
   for (const item of items) {
     const info = item.volumeInfo;
-    if (info.language && info.language !== "fr") continue;
+    if (info.language && info.language !== "fr") {
+      filteredByLang++;
+      continue;
+    }
     const seriesTitle = cleanSeriesTitle(info.title);
     if (!seriesTitle) continue;
     const edition = extractEditionLabel(info.title);
@@ -216,6 +222,12 @@ export async function searchMangaSeries(query: string): Promise<MangaSeries[]> {
       synopsis: info.description ?? null,
       firstVolumeIsbn: extractIsbn(info),
     });
+  }
+
+  if (series.length === 0) {
+    throw new Error(
+      `Google Books: 0 series after grouping (raw=${rawCount}, filteredByLang=${filteredByLang}, languages=${languages.join(",")})`,
+    );
   }
 
   // Trie par nombre de volumes décroissant (les séries les plus complètes en premier)
