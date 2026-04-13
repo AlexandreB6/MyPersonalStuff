@@ -1,35 +1,37 @@
-import { BookOpen, Plus, Check, Eye } from "lucide-react";
+import { BookOpen, Plus, Check, Star, Eye } from "lucide-react";
 import Link from "next/link";
-import type { MangaSeries } from "@/lib/google-books";
+import { mangaSlugify } from "@/lib/jikan";
+import type { JikanManga } from "@/lib/jikan";
 
 interface MangaSearchResultsProps {
-  results: MangaSeries[];
-  ownedGoogleBooksIds: Set<string>;
-  onAdd: (series: MangaSeries) => void;
+  results: JikanManga[];
+  ownedMalIds: Set<number>;
+  onAdd: (manga: JikanManga) => void;
 }
 
 /**
- * Liste de résultats de recherche de séries manga (Google Books / BnF).
+ * Liste de résultats de recherche manga Jikan.
  * Partagé entre AddMangaDialog et ScanMangaDialog.
  */
-export function MangaSearchResults({ results, ownedGoogleBooksIds, onAdd }: MangaSearchResultsProps) {
+export function MangaSearchResults({ results, ownedMalIds, onAdd }: MangaSearchResultsProps) {
   return (
     <div className="space-y-3">
-      {results.map((series) => {
-        const isOwned = ownedGoogleBooksIds.has(series.googleBooksId);
+      {results.map((manga) => {
+        const isOwned = ownedMalIds.has(manga.mal_id);
         return (
           <div
-            key={series.googleBooksId}
+            key={manga.mal_id}
             className={`flex gap-4 rounded-lg border p-3 transition-colors ${
               isOwned
                 ? "border-emerald-500/30 bg-emerald-500/5"
                 : "border-border/50 hover:border-border hover:bg-muted/30"
             }`}
           >
+            {/* Couverture */}
             <div className="h-28 w-20 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-              {series.coverImage ? (
+              {manga.images?.jpg?.image_url ? (
                 <img
-                  src={series.coverImage}
+                  src={manga.images.jpg.image_url}
                   alt=""
                   className="h-full w-full object-cover"
                   loading="lazy"
@@ -41,37 +43,62 @@ export function MangaSearchResults({ results, ownedGoogleBooksIds, onAdd }: Mang
               )}
             </div>
 
+            {/* Infos */}
             <div className="flex-1 min-w-0 flex flex-col">
-              <p className="text-sm font-semibold leading-tight line-clamp-1">{series.title}</p>
-              {series.author && (
-                <p className="text-xs text-muted-foreground mt-0.5">{series.author}</p>
+              <p className="text-sm font-semibold leading-tight line-clamp-1">{manga.title}</p>
+              {manga.authors?.[0] && (
+                <p className="text-xs text-muted-foreground mt-0.5">{manga.authors[0].name}</p>
               )}
 
+              {/* Métadonnées */}
               <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                {series.publisher && (
-                  <span className="rounded-full bg-blue-500/15 px-1.5 py-0.5 text-[10px] font-medium text-blue-400">
-                    {series.publisher}
+                {manga.score != null && manga.score > 0 && (
+                  <span className="inline-flex items-center gap-0.5 text-amber-400 font-medium">
+                    <Star className="h-3 w-3 fill-amber-400" aria-hidden="true" />
+                    {manga.score.toFixed(1)}
                   </span>
                 )}
-                {series.editionLabel && (
+                {manga.demographics?.[0] && (
                   <span className="rounded-full bg-violet-500/15 px-1.5 py-0.5 text-[10px] font-medium text-violet-400">
-                    {series.editionLabel}
+                    {manga.demographics[0].name}
                   </span>
                 )}
-                {series.volumeCount > 0 && <span>{series.volumeCount} vol.</span>}
+                {manga.volumes != null && <span>{manga.volumes} vol.</span>}
+                {manga.status && (
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                    manga.status === "Finished"
+                      ? "bg-emerald-500/15 text-emerald-400"
+                      : "bg-amber-500/15 text-amber-400"
+                  }`}>
+                    {manga.status === "Finished" ? "Terminé" : manga.status === "Publishing" ? "En cours" : manga.status}
+                  </span>
+                )}
               </div>
 
-              {series.synopsis && (
+              {/* Genres */}
+              {manga.genres && manga.genres.length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {manga.genres.slice(0, 4).map((g) => (
+                    <span key={g.name} className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                      {g.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Synopsis */}
+              {manga.synopsis && (
                 <p className="mt-1.5 text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
-                  {series.synopsis}
+                  {manga.synopsis}
                 </p>
               )}
             </div>
 
+            {/* Actions */}
             <div className="flex-shrink-0 flex flex-col items-end gap-1.5 pt-1">
               <button
                 onClick={() => {
-                  if (!isOwned) onAdd(series);
+                  if (!isOwned) onAdd(manga);
                 }}
                 disabled={isOwned}
                 className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors cursor-pointer ${
@@ -93,7 +120,7 @@ export function MangaSearchResults({ results, ownedGoogleBooksIds, onAdd }: Mang
                 )}
               </button>
               <Link
-                href={`/manga/preview/${encodeURIComponent(series.googleBooksId)}`}
+                href={`/manga/${mangaSlugify(manga.title, manga.mal_id)}`}
                 className="flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
               >
                 <Eye className="h-3.5 w-3.5" aria-hidden="true" />
