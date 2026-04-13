@@ -1,13 +1,21 @@
 /**
  * Route API : GET /api/manga/isbn?isbn=...
- * Recherche par ISBN : Google Books (FR) → BnF SRU (fallback).
+ * Chaîne de recherche : ISBN → Google Books (titre) → Jikan (manga MAL).
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { searchByIsbn } from "@/lib/google-books";
-import { searchByIsbnBnf } from "@/lib/bnf";
-import type { MangaSearchSource } from "../search/route";
+import { searchManga } from "@/lib/jikan";
 
+/** Nettoie le titre Google Books pour améliorer la recherche Jikan (retire "Vol.", "Tome", etc.). */
+function cleanTitle(raw: string): string {
+  return raw
+    .replace(/,?\s*(Vol\.?|Tome|T\.?)\s*\d+/gi, "")
+    .replace(/\(.*?\)/g, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+/** GET /api/manga/isbn?isbn=9782723489119 */
 export async function GET(request: NextRequest) {
   const isbn = request.nextUrl.searchParams.get("isbn");
 
@@ -18,38 +26,36 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  let series = null;
-  let source: MangaSearchSource = "google-books";
-  let gbError: string | null = null;
-
-  try {
-    series = await searchByIsbn(isbn);
-  } catch (err) {
-    gbError = err instanceof Error ? err.message : String(err);
+  // 1. Google Books lookup
+  const gbRes = await fetch(
+    `https://www.googleapis.com/books/v1/volumes?q=isbn:${isbn}`,
+  );
+  if (!gbRes.ok) {
+    return NextResponse.json(
+      { error: "Erreur lors de la recherche Google Books" },
+      { status: 502 },
+    );
   }
 
-  if (!series) {
-    try {
-      series = await searchByIsbnBnf(isbn);
-      if (series) source = "bnf";
-    } catch {
-      return NextResponse.json(
-        { error: "Impossible de contacter les APIs de recherche manga" },
-        { status: 502 },
-      );
-    }
-  }
-
-  if (!series) {
+  const gbData = await gbRes.json();
+  if (!gbData.totalItems || !gbData.items?.length) {
     return NextResponse.json(
       { error: "Aucun manga trouvé pour cet ISBN" },
       { status: 404 },
     );
   }
 
-  return NextResponse.json({
-    data: [series],
-    source,
-    debug: { gbError, coverImage: series.coverImage },
-  });
+  const title: string = gbData.items[0].volumeInfo.title;
+  const cleanedTitle = cleanTitle(title);
+
+  // 2. Jikan search (with AniList fallback)
+  try {
+    const { data: results, source } = await searchManga(cleanedTitle);
+    return NextResponse.json({ title, cleanedTitle, results, source });
+  } catch {
+    return NextResponse.json(
+      { error: "Impossible de contacter les APIs de recherche manga" },
+      { status: 502 },
+    );
+  }
 }

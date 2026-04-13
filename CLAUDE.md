@@ -20,16 +20,15 @@ No lint or test scripts are configured.
 
 - **Next.js 16** (App Router, TypeScript, `src/` directory)
 - **Tailwind CSS v4** + **shadcn/ui v4** (uses `@base-ui/react`, NOT `@radix-ui/react`)
-- **Prisma 5** + PostgreSQL (Neon) — do NOT upgrade to Prisma 7+, incompatible with Node 20
+- **Prisma 5** + SQLite (`prisma/dev.db`) — do NOT upgrade to Prisma 7+, incompatible with Node 20
 - **TMDB API** for movie metadata
-- **Google Books API** (FR editions) for manga metadata, with **BnF SRU** (catalogue.bnf.fr) as fallback
-- **next-themes** for dark/light theme toggle
+- **Jikan API** (`api.jikan.moe/v4`) for manga metadata (no auth required)
 - **lucide-react** for icons
 - **Quagga2** (`@ericblade/quagga2`) for barcode scanning (EAN-13/ISBN)
 
 ## Architecture
 
-Pages are server components that fetch data via Prisma or external APIs, then pass serialized data to `*Client.tsx` client components. Theme (dark/light) is managed by `next-themes` via `ThemeProvider` in the root layout.
+Pages are server components that fetch data via Prisma or external APIs, then pass serialized data to `*Client.tsx` client components. The app is dark-mode only (`<html lang="fr" className="dark">`).
 
 ### Homepage (`/`) — Dashboard
 
@@ -63,17 +62,13 @@ Dashboard showing an overview of all spaces (Cinema, Manga, Peinture) with count
 
 ### Manga space (`/manga`)
 
-- Collection page + detail at `/manga/[slug]` (slug format: `title-slug-{internalId}`, uses `makeSlug()` / `extractIdFromSlug()` from `src/lib/utils.ts`)
-- Preview page at `/manga/preview/[gbId]` — display a series fetched from Google Books before it's added to the collection
-- Search via Google Books (FR) → add to DB → display collection. UX: one card per series, with publisher + edition label visible
-- Fallback: BnF SRU (`catalogue.bnf.fr/api/SRU`) when Google Books is down or rate-limited
-- ISBN barcode scanning via Quagga2 → Google Books ISBN lookup → BnF fallback
+- Collection page + detail at `/manga/[slug]` (slug format: `title-slug-{malId}`, uses `extractMalIdFromSlug()` from `src/lib/jikan.ts`)
+- Search via Jikan API (MyAnimeList) → add to DB → display collection
+- ISBN barcode scanning via Quagga2 → Google Books → Jikan lookup chain
 - Tracks owned volumes as JSON array in `ownedVolumesMap` field (e.g. `"[1,2,3,5]"`)
 - Components in `src/components/manga/`: `MangaClient.tsx`, `MangaCard.tsx`, `MangaDetailClient.tsx`, `AddMangaDialog.tsx`, `ScanMangaDialog.tsx`, `MangaSearchResults.tsx`, `VolumeGrid.tsx`
-- API routes: `/api/manga/` (CRUD, uses internal `id`), `/api/manga/search/` (Google Books + BnF), `/api/manga/isbn/` (ISBN lookup)
-- `src/lib/google-books.ts` — Google Books helpers: `searchMangaSeries()`, `searchByIsbn()`, `getVolumeById()`, `getSeriesVolumes()`. Groups volumes into series by (title, publisher, editionLabel). Uses `GOOGLE_BOOKS_API_KEY` env var if set (recommended to avoid shared-quota 429s)
-- `src/lib/bnf.ts` — BnF SRU client: `searchMangaSeriesBnf()`, `searchByIsbnBnf()`, `getSeriesVolumesBnf()`. Parses Dublin Core XML, filters on `dc:type` to exclude non-book results (music, video)
-- Prisma `Manga` model: internal `id` as primary key, optional `googleBooksId` (unique), `publisher` + `editionLabel` (unique with `title`). No more `malId`/`chapters`/`score`
+- API routes: `/api/manga/` (CRUD), `/api/manga/search/` (Jikan proxy), `/api/manga/isbn/` (ISBN lookup)
+- `src/lib/jikan.ts` — Jikan API helpers and types
 
 ### API routes summary
 
@@ -81,9 +76,9 @@ Dashboard showing an overview of all spaces (Cinema, Manga, Peinture) with count
 - `/api/movies/` — CRUD for watched movies collection (POST upsert, PUT update rating/owned/watchedAt, DELETE)
 - `/api/now-playing/` — proxy for TMDB now-playing (legacy, client pagination)
 - `/api/paints/` — CRUD for owned paints
-- `/api/manga/` — CRUD for manga collection (POST upsert, PUT/DELETE by internal `id`)
-- `/api/manga/search/` — Google Books FR search with BnF SRU fallback; returns `{ data: MangaSeries[], source: "google-books" | "bnf" }`
-- `/api/manga/isbn/` — ISBN lookup (Google Books → BnF fallback); returns `{ data: MangaSeries[], source }`
+- `/api/manga/` — CRUD for manga collection
+- `/api/manga/search/` — proxy for Jikan manga search
+- `/api/manga/isbn/` — ISBN lookup (Google Books → Jikan search)
 
 ### shadcn/ui v4 — critical difference
 
@@ -95,8 +90,7 @@ Dashboard showing an overview of all spaces (Cinema, Manga, Peinture) with count
 `.env.local` requires:
 ```
 TMDB_API_KEY=...
-DATABASE_URL=postgresql://...   # Neon PostgreSQL connection string
-GOOGLE_BOOKS_API_KEY=...         # Optional but recommended — without it the shared quota gets exhausted and Google Books returns 429
+DATABASE_URL=file:./dev.db
 ```
 
 ## Locale

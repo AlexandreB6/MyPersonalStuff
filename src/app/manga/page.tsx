@@ -8,12 +8,28 @@ export const metadata = {
   description: "Collection personnelle de mangas",
 };
 
+/** Vérifie si l'API Jikan est accessible (timeout court). */
+async function checkJikanHealth(): Promise<boolean> {
+  try {
+    const res = await fetch("https://api.jikan.moe/v4/manga?q=test&limit=1", {
+      signal: AbortSignal.timeout(5000),
+      cache: "no-store",
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Page Manga — charge la collection depuis la DB
  * et passe les données au client component MangaClient.
  */
 export default async function MangaPage() {
-  const mangas = await prisma.manga.findMany({ orderBy: { title: "asc" } });
+  const [mangas, jikanUp] = await Promise.all([
+    prisma.manga.findMany({ orderBy: { title: "asc" } }),
+    checkJikanHealth(),
+  ]);
 
   const serialized = mangas.map((m) => ({
     ...m,
@@ -22,5 +38,5 @@ export default async function MangaPage() {
     updatedAt: m.updatedAt.toISOString(),
   }));
 
-  return <MangaClient initialMangas={serialized} />;
+  return <MangaClient initialMangas={serialized} jikanAvailable={jikanUp} />;
 }

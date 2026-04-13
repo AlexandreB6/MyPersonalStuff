@@ -1,17 +1,19 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, TriangleAlert } from "lucide-react";
 import { MangaCard, type MangaItem } from "./MangaCard";
 import { AddMangaDialog } from "./AddMangaDialog";
 import { ScanMangaDialog } from "./ScanMangaDialog";
 import { DEMOGRAPHIC_OPTIONS } from "@/lib/utils";
-import type { MangaSeries } from "@/lib/google-books";
+import type { JikanManga } from "@/lib/jikan";
 
 interface Props {
   initialMangas: MangaItem[];
+  jikanAvailable: boolean;
 }
 
+/** Statuts de filtrage */
 const STATUS_OPTIONS = [
   { value: "all", label: "Tous" },
   { value: "Publishing", label: "En cours" },
@@ -22,18 +24,16 @@ const STATUS_OPTIONS = [
  * Client component principal pour la page Manga.
  * Gère la collection, les filtres et les actions CRUD optimistes.
  */
-export function MangaClient({ initialMangas }: Props) {
+export function MangaClient({ initialMangas, jikanAvailable }: Props) {
   const [mangas, setMangas] = useState<MangaItem[]>(initialMangas);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [demographicFilter, setDemographicFilter] = useState<string>("all");
 
-  /** IDs Google Books des mangas possédés — pour le dialog d'ajout */
-  const ownedGoogleBooksIds = useMemo(
-    () => new Set(mangas.map((m) => m.googleBooksId).filter((id): id is string => id != null)),
-    [mangas],
-  );
+  /** IDs MAL des mangas possédés — pour le dialog d'ajout */
+  const ownedMalIds = useMemo(() => new Set(mangas.map((m) => m.malId)), [mangas]);
 
+  /** Liste filtrée */
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     return mangas.filter((m) => {
@@ -52,53 +52,74 @@ export function MangaClient({ initialMangas }: Props) {
     setDemographicFilter("all");
   }, []);
 
-  const addManga = useCallback(async (series: MangaSeries) => {
-    const payload = {
-      googleBooksId: series.googleBooksId,
-      title: series.title,
-      titleJapanese: null,
-      coverImage: series.coverImage,
-      author: series.author,
-      publisher: series.publisher,
-      editionLabel: series.editionLabel,
-      volumes: series.volumeCount > 0 ? series.volumeCount : null,
-      synopsis: series.synopsis,
-      genres: null,
-      demographic: null,
-      status: null,
-      source: "google-books",
-    };
+  /** Appel API générique */
+  const apiCall = useCallback(
+    async (method: string, body: Record<string, unknown>) => {
+      await fetch("/api/manga", {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    },
+    [],
+  );
 
-    const res = await fetch("/api/manga", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) return;
-    const created = await res.json();
+  /** Ajouter un manga depuis les résultats Jikan */
+  const addManga = useCallback(
+    async (jikan: JikanManga) => {
+      const newManga: MangaItem = {
+        id: Date.now(),
+        malId: jikan.mal_id,
+        title: jikan.title,
+        titleJapanese: jikan.title_japanese,
+        coverImage: jikan.images?.jpg?.large_image_url ?? jikan.images?.jpg?.image_url ?? null,
+        author: jikan.authors?.[0]?.name ?? null,
+        volumes: jikan.volumes,
+        chapters: jikan.chapters,
+        synopsis: jikan.synopsis,
+        genres: jikan.genres?.map((g) => g.name).join(", ") ?? null,
+        demographic: jikan.demographics?.[0]?.name ?? null,
+        score: jikan.score,
+        status: jikan.status,
+        ownedVolumesMap: [],
+        notes: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
 
-    const newManga: MangaItem = {
-      ...created,
-      ownedVolumesMap: [],
-      createdAt: created.createdAt,
-      updatedAt: created.updatedAt,
-    };
-    setMangas((prev) => [...prev, newManga]);
-  }, []);
+      setMangas((prev) => [...prev, newManga]);
+      await apiCall("POST", {
+        malId: jikan.mal_id,
+        title: jikan.title,
+        titleJapanese: jikan.title_japanese,
+        coverImage: newManga.coverImage,
+        author: newManga.author,
+        volumes: jikan.volumes,
+        chapters: jikan.chapters,
+        synopsis: jikan.synopsis,
+        genres: newManga.genres,
+        demographic: newManga.demographic,
+        score: jikan.score,
+        status: jikan.status,
+      });
+    },
+    [apiCall],
+  );
 
-  const removeManga = useCallback(async (id: number) => {
-    setMangas((prev) => prev.filter((m) => m.id !== id));
-    await fetch("/api/manga", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id }),
-    });
-  }, []);
+  /** Supprimer un manga */
+  const removeManga = useCallback(
+    (malId: number) => {
+      setMangas((prev) => prev.filter((m) => m.malId !== malId));
+      apiCall("DELETE", { malId });
+    },
+    [apiCall],
+  );
 
   const totalVolumes = mangas.reduce((sum, m) => sum + m.ownedVolumesMap.length, 0);
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-4xl font-extrabold tracking-tight">Manga</h1>
@@ -107,11 +128,22 @@ export function MangaClient({ initialMangas }: Props) {
           </p>
         </div>
         <div className="flex gap-2">
-          <ScanMangaDialog ownedGoogleBooksIds={ownedGoogleBooksIds} onAdd={addManga} />
-          <AddMangaDialog ownedGoogleBooksIds={ownedGoogleBooksIds} onAdd={addManga} />
+          <ScanMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
+          <AddMangaDialog ownedMalIds={ownedMalIds} onAdd={addManga} />
         </div>
       </div>
 
+      {/* Avertissement API Jikan */}
+      {!jikanAvailable && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          <TriangleAlert className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
+          <p>
+            L&apos;API MyAnimeList (Jikan) est actuellement indisponible. La recherche utilise AniList comme source alternative — certains résultats peuvent différer.
+          </p>
+        </div>
+      )}
+
+      {/* Filtres */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <div className="relative w-full sm:w-56" role="search">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -169,13 +201,15 @@ export function MangaClient({ initialMangas }: Props) {
         </div>
       </div>
 
+      {/* Compteur */}
       <p className="text-sm text-muted-foreground" aria-live="polite">
         {filtered.length} manga{filtered.length !== 1 ? "s" : ""}
       </p>
 
+      {/* Grille */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {filtered.map((manga) => (
-          <MangaCard key={manga.id} manga={manga} onRemove={() => removeManga(manga.id)} />
+          <MangaCard key={manga.malId} manga={manga} onRemove={() => removeManga(manga.malId)} />
         ))}
       </div>
 

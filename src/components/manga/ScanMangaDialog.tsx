@@ -3,20 +3,20 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { ScanBarcode, X, Loader2, RotateCcw, Info } from "lucide-react";
 import { MangaSearchResults } from "./MangaSearchResults";
-import type { MangaSeries } from "@/lib/google-books";
+import type { JikanManga } from "@/lib/jikan";
 
 type Phase = "scanning" | "loading" | "results" | "error";
 
 interface ScanMangaDialogProps {
-  ownedGoogleBooksIds: Set<string>;
-  onAdd: (series: MangaSeries) => void;
+  ownedMalIds: Set<number>;
+  onAdd: (manga: JikanManga) => void;
 }
 
 /**
  * Dialog de scan de code-barres manga via la caméra (Quagga2).
- * Flux : caméra → détection EAN-13 → lookup ISBN → résultats Google Books / BnF.
+ * Flux : caméra → détection EAN-13 → lookup ISBN → résultats Jikan.
  */
-export function ScanMangaDialog({ ownedGoogleBooksIds, onAdd }: ScanMangaDialogProps) {
+export function ScanMangaDialog({ ownedMalIds, onAdd }: ScanMangaDialogProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const viewfinderRef = useRef<HTMLDivElement>(null);
   const isProcessingRef = useRef(false);
@@ -24,14 +24,14 @@ export function ScanMangaDialog({ ownedGoogleBooksIds, onAdd }: ScanMangaDialogP
 
   const [open, setOpen] = useState(false);
   const [phase, setPhase] = useState<Phase>("scanning");
-  const [results, setResults] = useState<MangaSeries[]>([]);
-  const [source, setSource] = useState<"google-books" | "bnf">("google-books");
+  const [results, setResults] = useState<JikanManga[]>([]);
+  const [source, setSource] = useState<"jikan" | "anilist">("jikan");
   const [errorMsg, setErrorMsg] = useState("");
   const [isbn, setIsbn] = useState("");
 
   const resetState = useCallback(() => {
     setResults([]);
-    setSource("google-books");
+    setSource("jikan");
     setErrorMsg("");
     setIsbn("");
     isProcessingRef.current = false;
@@ -98,12 +98,12 @@ export function ScanMangaDialog({ ownedGoogleBooksIds, onAdd }: ScanMangaDialogP
         throw new Error(data?.error ?? "Erreur lors de la recherche");
       }
       const data = await res.json();
-      if (!data.data?.length) {
+      if (!data.results?.length) {
         setErrorMsg("Aucun manga trouvé pour cet ISBN");
         setPhase("error");
         return;
       }
-      setResults(data.data);
+      setResults(data.results);
       if (data.source) setSource(data.source);
       setPhase("results");
     } catch (err) {
@@ -216,17 +216,13 @@ export function ScanMangaDialog({ ownedGoogleBooksIds, onAdd }: ScanMangaDialogP
 
               {phase === "results" && (
                 <div className="space-y-3">
-                  {source === "bnf" && (
+                  {source === "anilist" && (
                     <div className="flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-xs text-blue-300">
                       <Info className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-                      Résultats via BnF (Google Books indisponible)
+                      Résultats via AniList (MyAnimeList indisponible)
                     </div>
                   )}
-                  <MangaSearchResults
-                    results={results}
-                    ownedGoogleBooksIds={ownedGoogleBooksIds}
-                    onAdd={onAdd}
-                  />
+                  <MangaSearchResults results={results} ownedMalIds={ownedMalIds} onAdd={onAdd} />
                   <button
                     onClick={goToScanning}
                     className="flex items-center gap-2 mx-auto rounded-lg border border-border px-4 py-2 text-sm font-medium hover:bg-muted transition-colors cursor-pointer"

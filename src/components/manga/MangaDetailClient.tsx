@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ChevronLeft, BookOpen, Trash2, ExternalLink, Plus } from "lucide-react";
+import { ChevronLeft, Star, BookOpen, Trash2, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { MangaItem } from "./MangaCard";
@@ -36,10 +36,10 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
       await fetch("/api/manga", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: manga.id, ...body }),
+        body: JSON.stringify({ malId: manga.malId, ...body }),
       });
     },
-    [manga.id],
+    [manga.malId],
   );
 
   const toggleVolume = useCallback(
@@ -79,47 +79,41 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
     await fetch("/api/manga", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: manga.id }),
+      body: JSON.stringify({ malId: manga.malId }),
     });
     router.push("/manga");
-  }, [manga.id, router]);
+  }, [manga.malId, router]);
 
   const addToCollection = useCallback(async () => {
     setAdding(true);
     try {
-      const res = await fetch("/api/manga", {
+      await fetch("/api/manga", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          googleBooksId: manga.googleBooksId,
+          malId: manga.malId,
           title: manga.title,
           titleJapanese: manga.titleJapanese,
           coverImage: manga.coverImage,
           author: manga.author,
-          publisher: manga.publisher,
-          editionLabel: manga.editionLabel,
           volumes: manga.volumes,
+          chapters: manga.chapters,
           synopsis: manga.synopsis,
           genres: manga.genres,
           demographic: manga.demographic,
+          score: manga.score,
           status: manga.status,
-          source: manga.source,
         }),
       });
-      if (res.ok) {
-        const created = await res.json();
-        setManga((prev) => ({ ...prev, id: created.id }));
-        setInCollection(true);
-      }
+      setInCollection(true);
     } finally {
       setAdding(false);
     }
   }, [manga]);
 
-  const amazonQuery = [manga.title, manga.publisher, manga.editionLabel].filter(Boolean).join(" ");
-
   return (
     <div className="space-y-8">
+      {/* Breadcrumb */}
       <Link
         href="/manga"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -128,7 +122,9 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
         Collection
       </Link>
 
+      {/* Hero */}
       <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
+        {/* Couverture */}
         <div className="flex-shrink-0 w-48 sm:w-56">
           <div className="relative aspect-[2/3] overflow-hidden rounded-xl border border-border/50 bg-muted shadow-xl">
             {manga.coverImage ? (
@@ -145,6 +141,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
           </div>
         </div>
 
+        {/* Infos */}
         <div className="flex-1 space-y-4">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
@@ -159,15 +156,12 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
             <p className="text-base text-muted-foreground">par <span className="text-foreground font-medium">{manga.author}</span></p>
           )}
 
+          {/* Métadonnées */}
           <div className="flex flex-wrap items-center gap-3 text-sm">
-            {manga.publisher && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/20 text-blue-400">
-                {manga.publisher}
-              </span>
-            )}
-            {manga.editionLabel && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-violet-500/20 text-violet-400">
-                Édition {manga.editionLabel}
+            {manga.score != null && manga.score > 0 && (
+              <span className="inline-flex items-center gap-1.5 bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full font-bold">
+                <Star className="w-4 h-4 fill-amber-400" aria-hidden="true" />
+                {manga.score.toFixed(1)}
               </span>
             )}
             {statusLabel && (
@@ -187,8 +181,12 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
             {manga.volumes != null && (
               <span className="text-muted-foreground">{manga.volumes} volumes</span>
             )}
+            {manga.chapters != null && (
+              <span className="text-muted-foreground">{manga.chapters} chapitres</span>
+            )}
           </div>
 
+          {/* Genres */}
           {genres.length > 0 && (
             <div className="flex flex-wrap gap-2">
               {genres.map((g) => (
@@ -199,6 +197,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
             </div>
           )}
 
+          {/* Progression */}
           <div className="flex items-center gap-3">
             <div className="text-sm">
               <span className="text-2xl font-bold">{ownedCount}</span>
@@ -217,6 +216,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
             )}
           </div>
 
+          {/* Bouton ajout collection */}
           {!inCollection && (
             <button
               onClick={addToCollection}
@@ -228,29 +228,28 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
             </button>
           )}
 
+          {/* Liens externes */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            {manga.googleBooksId && (
-              <a
-                href={`https://books.google.fr/books?id=${manga.googleBooksId}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 text-xs font-medium transition-colors border border-blue-500/20"
-              >
-                Google Books
-                <ExternalLink className="w-3 h-3" aria-hidden="true" />
-              </a>
-            )}
             <a
-              href={`https://www.bdfugue.com/search?q=${encodeURIComponent(manga.title)}`}
+              href={`https://myanimelist.net/manga/${manga.malId}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/15 text-orange-400 hover:bg-orange-500/25 text-xs font-medium transition-colors border border-orange-500/20"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-500/15 text-blue-400 hover:bg-blue-500/25 text-xs font-medium transition-colors border border-blue-500/20"
             >
-              BDFugue
+              MyAnimeList
               <ExternalLink className="w-3 h-3" aria-hidden="true" />
             </a>
             <a
-              href={`https://www.amazon.fr/s?k=${encodeURIComponent(amazonQuery + " manga")}`}
+              href={`https://anilist.co/search/manga?search=${encodeURIComponent(manga.title)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 text-white/70 hover:bg-white/10 text-xs font-medium transition-colors border border-white/10"
+            >
+              AniList
+              <ExternalLink className="w-3 h-3" aria-hidden="true" />
+            </a>
+            <a
+              href={`https://www.amazon.fr/s?k=${encodeURIComponent(manga.title + " manga")}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-500/15 text-orange-400 hover:bg-orange-500/25 text-xs font-medium transition-colors border border-orange-500/20"
@@ -262,6 +261,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
         </div>
       </div>
 
+      {/* Synopsis */}
       {manga.synopsis && (
         <section>
           <h2 className="text-xl font-bold mb-3">Synopsis</h2>
@@ -269,8 +269,10 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
         </section>
       )}
 
+      {/* Sections collection uniquement */}
       {inCollection && (
         <>
+          {/* Grille de volumes */}
           <section>
             <h2 className="text-xl font-bold mb-3">Volumes possédés</h2>
             <VolumeGrid
@@ -300,6 +302,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
             )}
           </section>
 
+          {/* Notes */}
           <section>
             <h2 className="text-xl font-bold mb-3">Notes</h2>
             <textarea
@@ -313,6 +316,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
             {savingNotes && <p className="text-xs text-muted-foreground mt-1">Sauvegarde...</p>}
           </section>
 
+          {/* Zone danger */}
           <section className="border-t border-border pt-6">
             <button
               onClick={() => setConfirmDelete(true)}
