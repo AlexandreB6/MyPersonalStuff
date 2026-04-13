@@ -20,11 +20,12 @@ export async function GET(request: NextRequest) {
 
   let series = null;
   let source: MangaSearchSource = "google-books";
+  let gbError: string | null = null;
 
   try {
     series = await searchByIsbn(isbn);
-  } catch {
-    // Google Books down → fallback BnF
+  } catch (err) {
+    gbError = err instanceof Error ? err.message : String(err);
   }
 
   if (!series) {
@@ -46,5 +47,9 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json({ data: [series], source });
+  return NextResponse.json({
+    data: [series],
+    source,
+    debug: { gbError, coverImage: series.coverImage },
+  });
 }
