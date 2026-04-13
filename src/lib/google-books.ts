@@ -151,7 +151,7 @@ function httpsify(url: string | undefined): string | null {
 async function fetchGB(query: string, maxResults = 40): Promise<GBVolume[]> {
   const apiKey = process.env.GOOGLE_BOOKS_API_KEY;
   const keyParam = apiKey ? `&key=${apiKey}` : "";
-  const url = `${GB_BASE}?q=${encodeURIComponent(query)}&langRestrict=fr&maxResults=${maxResults}&printType=books${keyParam}`;
+  const url = `${GB_BASE}?q=${encodeURIComponent(query)}&langRestrict=fr&country=FR&maxResults=${maxResults}&printType=books${keyParam}`;
   const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
