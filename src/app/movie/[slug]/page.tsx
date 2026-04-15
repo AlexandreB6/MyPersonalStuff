@@ -7,6 +7,7 @@ import {
   extractIdFromSlug,
 } from "@/lib/tmdb";
 import { prisma } from "@/lib/prisma";
+import { demoFilter, isDemoMode } from "@/lib/demo";
 import Image from "next/image";
 import { BackToCinema } from "@/components/cinema/BackToCinema";
 import {
@@ -32,9 +33,15 @@ interface Props {
 export default async function MovieDetailPage({ params }: Props) {
   const { slug } = await params;
   const id = extractIdFromSlug(slug);
+  const filter = await demoFilter();
+  // Prefer the visitor's own row over the seed row when both exist for the
+  // same tmdbId (nulls last → non-null demoSessionId first).
   const [movie, watchedMovie] = await Promise.all([
     getMovieWithCredits(id),
-    prisma.movie.findUnique({ where: { tmdbId: id } }),
+    prisma.movie.findFirst({
+      where: { AND: [{ tmdbId: id }, filter] },
+      orderBy: { demoSessionId: { sort: "desc", nulls: "last" } },
+    }),
   ]);
   const { results: reviews } = await getMovieReviews(id);
   const director = getDirector(movie);
@@ -167,6 +174,7 @@ export default async function MovieDetailPage({ params }: Props) {
                     watchedMovie?.watchedAt?.toISOString() ?? null
                   }
                   initialWatchedPrecision={watchedMovie?.watchedPrecision ?? "day"}
+                  isShared={isDemoMode() && watchedMovie != null && watchedMovie.demoSessionId == null}
                 />
               </div>
 

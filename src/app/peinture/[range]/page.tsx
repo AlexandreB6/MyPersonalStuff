@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { RANGE_MAP } from "@/data/paint-ranges";
 import { PeintureClient } from "@/components/peinture/PeintureClient";
+import { demoFilter, dedupBySid } from "@/lib/demo";
 
 interface Props {
   params: Promise<{ range: string }>;
@@ -23,14 +24,17 @@ export default async function PeintureRangePage({ params }: Props) {
   const range = RANGE_MAP.get(rangeSlug);
   if (!range) notFound();
 
-  const ownedPaints = await prisma.ownedPaint.findMany({
-    where: { range: rangeSlug },
+  const filter = await demoFilter();
+  const ownedPaintsRaw = await prisma.ownedPaint.findMany({
+    where: { AND: [{ range: rangeSlug }, filter] },
   });
+  const ownedPaints = dedupBySid(ownedPaintsRaw, (p) => p.paintId);
 
   const owned = ownedPaints.map((p) => ({
     paintId: p.paintId,
     quantity: p.quantity,
     notes: p.notes,
+    demoSessionId: p.demoSessionId,
   }));
 
   return (

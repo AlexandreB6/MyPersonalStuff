@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Film, Paintbrush, BookOpen, ArrowRight } from "lucide-react";
 import { mangaSlugify } from "@/lib/jikan";
 import { RANGE_MAP } from "@/data/paint-ranges";
+import { demoFilter, dedupBySid } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -12,21 +13,32 @@ export const dynamic = "force-dynamic";
  * avec les derniers éléments ajoutés et les compteurs globaux.
  */
 export default async function DashboardPage() {
-  const [movies, mangas, paints] = await Promise.all([
-    prisma.movie.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
-    prisma.manga.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
-    prisma.ownedPaint.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
+  const where = await demoFilter();
+  // In demo mode, fetch 10 (not 5) so dedup has headroom if the visitor's copy
+  // collides with seed rows; then slice to 5 after dedup.
+  const fetchTake = 10;
+  const [moviesRaw, mangasRaw, paintsRaw] = await Promise.all([
+    prisma.movie.findMany({ where, orderBy: { createdAt: "desc" }, take: fetchTake }),
+    prisma.manga.findMany({ where, orderBy: { createdAt: "desc" }, take: fetchTake }),
+    prisma.ownedPaint.findMany({ where, orderBy: { createdAt: "desc" }, take: fetchTake }),
   ]);
+  const movies = dedupBySid(moviesRaw, (m) => m.tmdbId ?? `movie-${m.id}`).slice(0, 5);
+  const mangas = dedupBySid(mangasRaw, (m) => m.malId).slice(0, 5);
+  const paints = dedupBySid(paintsRaw, (p) => `${p.range}:${p.paintId}`).slice(0, 5);
 
-  const [movieCount, mangaCount, paintCount] = await Promise.all([
-    prisma.movie.count(),
-    prisma.manga.count(),
-    prisma.ownedPaint.count(),
+  // Counts: fetch full lists (already scoped) and count deduped length, so
+  // the dashboard doesn't double-count seed + visitor collision pairs.
+  const [allMovies, allMangas, allPaints] = await Promise.all([
+    prisma.movie.findMany({ where, select: { id: true, tmdbId: true, demoSessionId: true } }),
+    prisma.manga.findMany({ where, select: { id: true, malId: true, demoSessionId: true, ownedVolumesMap: true } }),
+    prisma.ownedPaint.findMany({ where, select: { id: true, paintId: true, range: true, demoSessionId: true } }),
   ]);
+  const movieCount = dedupBySid(allMovies, (m) => m.tmdbId ?? `movie-${m.id}`).length;
+  const dedupedMangas = dedupBySid(allMangas, (m) => m.malId);
+  const mangaCount = dedupedMangas.length;
+  const paintCount = dedupBySid(allPaints, (p) => `${p.range}:${p.paintId}`).length;
 
-  // Récupère tous les mangas pour calculer le total de volumes possédés (pas seulement les 5 derniers)
-  const allMangaVolumes = await prisma.manga.findMany({ select: { ownedVolumesMap: true } });
-  const totalOwnedVolumes = allMangaVolumes.reduce((sum, m) => {
+  const totalOwnedVolumes = dedupedMangas.reduce((sum, m) => {
     const owned = JSON.parse(m.ownedVolumesMap) as number[];
     return sum + owned.length;
   }, 0);

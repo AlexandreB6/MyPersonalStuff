@@ -4,6 +4,10 @@ import "./globals.css";
 import Link from "next/link";
 import { LayoutGrid, Film, Paintbrush, BookOpen } from "lucide-react";
 import { MobileNav } from "@/components/MobileNav";
+import { DemoBanner } from "@/components/DemoBanner";
+import { Toaster } from "sonner";
+
+const IS_DEMO = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 
 /** Police principale — Plus Jakarta Sans via Google Fonts */
 const jakarta = Plus_Jakarta_Sans({
@@ -37,6 +41,8 @@ export default function RootLayout({
           Aller au contenu principal
         </a>
 
+        {IS_DEMO && <DemoBanner />}
+
         {/* Header sticky avec navigation */}
         <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
           <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between md:justify-start gap-3">
@@ -66,6 +72,7 @@ export default function RootLayout({
         <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
           {children}
         </main>
+        <Toaster richColors position="bottom-right" theme="dark" />
       </body>
     </html>
   );

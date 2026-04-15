@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Eye, EyeOff, Pencil, Star, StarHalf, X } from "lucide-react";
 import { buildYearOptions } from "@/lib/utils";
+import { apiFetch } from "@/lib/apiFetch";
 
 const YEAR_OPTIONS = buildYearOptions(1970);
 
@@ -18,6 +19,7 @@ interface WatchedToggleProps {
   initialRating: number | null;
   initialWatchedAt: string | null;
   initialWatchedPrecision: string;
+  isShared?: boolean;
 }
 
 /**
@@ -28,6 +30,7 @@ export function WatchedToggle({
   tmdbId, title, posterPath, overview, director, releaseYear, releaseDate,
   initialWatched, initialRating, initialWatchedAt,
   // initialWatchedPrecision n'est pas utilisé — la précision est toujours "year" dans le dialog
+  isShared = false,
 }: WatchedToggleProps) {
   const [watched, setWatched] = useState(initialWatched);
   const [userRating, setUserRating] = useState<number | null>(initialRating);
@@ -56,7 +59,7 @@ export function WatchedToggle({
     setSaving(true);
     try {
       const dateValue = dialogYear ? `${dialogYear}-01-01` : null;
-      const res = await fetch("/api/movies", {
+      const res = await apiFetch("/api/movies", {
         method: isEditing ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
         body: isEditing
@@ -82,7 +85,7 @@ export function WatchedToggle({
   const handleRemove = async () => {
     setSaving(true);
     try {
-      const res = await fetch("/api/movies", {
+      const res = await apiFetch("/api/movies", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tmdbId }),
@@ -115,26 +118,37 @@ export function WatchedToggle({
               </span>
             )}
           </div>
-          <button
-            onClick={() => {
-              setDialogRating(userRating);
-              setDialogYear(userWatchedAt ? new Date(userWatchedAt).getFullYear() : "");
-              setShowDialog(true);
-            }}
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors border border-white/10 cursor-pointer disabled:opacity-50"
-          >
-            <Pencil className="w-4 h-4" aria-hidden="true" />
-            Modifier
-          </button>
-          <button
-            onClick={handleRemove}
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 text-sm font-medium transition-colors border border-red-500/20 cursor-pointer disabled:opacity-50"
-          >
-            <EyeOff className="w-4 h-4" aria-hidden="true" />
-            Retirer
-          </button>
+          {isShared ? (
+            <span
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/10 text-amber-300 text-sm font-medium border border-amber-500/20"
+              title="Ce film fait partie du catalogue de démonstration, partagé avec tous les visiteurs."
+            >
+              Catalogue partagé — non modifiable
+            </span>
+          ) : (
+            <>
+              <button
+                onClick={() => {
+                  setDialogRating(userRating);
+                  setDialogYear(userWatchedAt ? new Date(userWatchedAt).getFullYear() : "");
+                  setShowDialog(true);
+                }}
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors border border-white/10 cursor-pointer disabled:opacity-50"
+              >
+                <Pencil className="w-4 h-4" aria-hidden="true" />
+                Modifier
+              </button>
+              <button
+                onClick={handleRemove}
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 text-red-400 hover:bg-red-500/20 text-sm font-medium transition-colors border border-red-500/20 cursor-pointer disabled:opacity-50"
+              >
+                <EyeOff className="w-4 h-4" aria-hidden="true" />
+                Retirer
+              </button>
+            </>
+          )}
         </div>
       ) : (
         <button

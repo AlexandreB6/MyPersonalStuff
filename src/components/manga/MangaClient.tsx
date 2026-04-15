@@ -7,6 +7,8 @@ import { AddMangaDialog } from "./AddMangaDialog";
 import { ScanMangaDialog } from "./ScanMangaDialog";
 import { DEMOGRAPHIC_OPTIONS } from "@/lib/utils";
 import type { JikanManga } from "@/lib/jikan";
+import { apiFetch } from "@/lib/apiFetch";
+import { isSharedItem } from "@/lib/clientDemo";
 
 interface Props {
   initialMangas: MangaItem[];
@@ -52,10 +54,10 @@ export function MangaClient({ initialMangas, jikanAvailable }: Props) {
     setDemographicFilter("all");
   }, []);
 
-  /** Appel API générique */
+  /** Appel API générique — toast auto sur erreur. */
   const apiCall = useCallback(
     async (method: string, body: Record<string, unknown>) => {
-      await fetch("/api/manga", {
+      await apiFetch("/api/manga", {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -85,6 +87,7 @@ export function MangaClient({ initialMangas, jikanAvailable }: Props) {
         notes: null,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
+        demoSessionId: null,
       };
 
       setMangas((prev) => [...prev, newManga]);
@@ -209,7 +212,12 @@ export function MangaClient({ initialMangas, jikanAvailable }: Props) {
       {/* Grille */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {filtered.map((manga) => (
-          <MangaCard key={manga.malId} manga={manga} onRemove={() => removeManga(manga.malId)} />
+          <MangaCard
+            key={manga.malId}
+            manga={manga}
+            onRemove={() => removeManga(manga.malId)}
+            isShared={isSharedItem(manga)}
+          />
         ))}
       </div>
 

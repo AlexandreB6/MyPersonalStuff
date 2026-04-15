@@ -6,27 +6,30 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 /// Peinture possédée par l'utilisateur (multi-gamme)
 model OwnedPaint {
-  id        Int      @id @default(autoincrement())
-  paintId   String   /// Identifiant slug de la peinture (ex: "abaddon-black")
-  range     String   @default("citadel") /// Gamme de peinture ("citadel", "monument-hobbies")
-  quantity  Int      @default(1)
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  paintId       String   /// Identifiant slug de la peinture (ex: "abaddon-black")
+  range         String   @default("citadel") /// Gamme de peinture ("citadel", "monument-hobbies")
+  quantity      Int      @default(1)
+  notes         String?
+  demoSessionId String?  /// Sandbox démo : NULL = seed partagé / prod privée
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  @@unique([paintId, range])
+  @@unique([paintId, range, demoSessionId])
+  @@index([demoSessionId])
 }
 
 /// Manga suivi dans la collection personnelle
 model Manga {
   id             Int      @id @default(autoincrement())
-  malId          Int      @unique /// Identifiant MyAnimeList
+  malId          Int      /// Identifiant MyAnimeList
   title          String
   titleJapanese  String?
   coverImage     String?  /// URL image couverture
@@ -40,24 +43,32 @@ model Manga {
   status         String?  /// "Publishing", "Finished", etc.
   ownedVolumesMap String  @default("[]") /// JSON array des numéros de volumes possédés, ex: "[1,2,3,5]"
   notes          String?  /// Notes perso
+  demoSessionId  String?  /// Sandbox démo : NULL = seed partagé / prod privée
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
+
+  @@unique([malId, demoSessionId])
+  @@index([demoSessionId])
 }
 
 /// Film suivi dans la collection personnelle
 model Movie {
-  id          Int       @id @default(autoincrement())
-  tmdbId      Int?      @unique /// Identifiant TMDB pour enrichir les métadonnées
-  title       String
-  posterPath  String?
-  overview    String?
-  director    String?
-  releaseYear Int?
+  id               Int       @id @default(autoincrement())
+  tmdbId           Int?      /// Identifiant TMDB pour enrichir les métadonnées
+  title            String
+  posterPath       String?
+  overview         String?
+  director         String?
+  releaseYear      Int?
   watchedAt        DateTime? /// Date à laquelle le film a été vu (optionnelle)
   watchedPrecision String    @default("day") /// Précision de la date : "day" ou "year"
-  rating      Float?    /// Note personnelle (0.5–5, par pas de 0.5)
-  owned       Boolean   @default(false) /// Possède un exemplaire physique
-  ownedFormat String?  /// Format possédé (DVD, Blu-ray, etc.)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  rating           Float?    /// Note personnelle (0.5–5, par pas de 0.5)
+  owned            Boolean   @default(false) /// Possède un exemplaire physique
+  ownedFormat      String?   /// Format possédé (DVD, Blu-ray, etc.)
+  demoSessionId    String?   /// Sandbox démo : NULL = seed partagé / prod privée
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([tmdbId, demoSessionId])
+  @@index([demoSessionId])
 }

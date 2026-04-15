@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import type { MangaItem } from "./MangaCard";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { VolumeGrid } from "./VolumeGrid";
+import { apiFetch } from "@/lib/apiFetch";
 
 interface Props {
   manga: MangaItem;
@@ -33,7 +34,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
 
   const apiCall = useCallback(
     async (body: Record<string, unknown>) => {
-      await fetch("/api/manga", {
+      await apiFetch("/api/manga", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ malId: manga.malId, ...body }),
@@ -76,7 +77,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
   }, [notes, apiCall]);
 
   const removeManga = useCallback(async () => {
-    await fetch("/api/manga", {
+    await apiFetch("/api/manga", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ malId: manga.malId }),
@@ -87,7 +88,7 @@ export function MangaDetailClient({ manga: initial, isInCollection: initialInCol
   const addToCollection = useCallback(async () => {
     setAdding(true);
     try {
-      await fetch("/api/manga", {
+      await apiFetch("/api/manga", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

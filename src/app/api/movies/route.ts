@@ -1,20 +1,34 @@
 /**
  * Route API : /api/movies
  * CRUD pour la collection de films vus.
+ * Demo mode: writes are scoped per visitor via demoSessionId cookie.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import {
+  assertDemoOwnership,
+  demoFilter,
+  demoWriteData,
+  DemoForbiddenError,
+} from "@/lib/demo";
+import { ownerGateResponse } from "@/lib/owner";
 
-/** Liste tous les films de la collection. */
+/** Liste tous les films visibles pour la session courante (seed + sandbox). */
 export async function GET() {
-  const movies = await prisma.movie.findMany({ orderBy: { createdAt: "desc" } });
+  const filter = await demoFilter();
+  const movies = await prisma.movie.findMany({
+    where: filter,
+    orderBy: { createdAt: "desc" },
+  });
   return NextResponse.json(movies);
 }
 
-/** Ajoute un film vu (upsert sur tmdbId). */
+/** Ajoute un film vu (upsert scoped par demoSessionId). */
 export async function POST(req: NextRequest) {
+  const gate = await ownerGateResponse();
+  if (gate) return gate;
   const body = await req.json();
   const { tmdbId, title, posterPath, overview, director, releaseYear, rating, watchedAt, watchedPrecision } = body;
 
@@ -23,26 +37,34 @@ export async function POST(req: NextRequest) {
   }
 
   const precision = watchedPrecision === "year" ? "year" : "day";
+  const { demoSessionId } = await demoWriteData();
 
-  const movie = await prisma.movie.upsert({
-    where: { tmdbId },
-    create: {
-      tmdbId,
-      title,
-      posterPath: posterPath ?? null,
-      overview: overview ?? null,
-      director: director ?? null,
-      releaseYear: releaseYear ?? null,
-      rating: rating != null ? Number(rating) : null,
-      watchedAt: watchedAt ? new Date(watchedAt) : null,
-      watchedPrecision: precision,
-    },
-    update: {
-      rating: rating != null ? Number(rating) : null,
-      watchedAt: watchedAt ? new Date(watchedAt) : undefined,
-      watchedPrecision: precision,
-    },
-  });
+  const existing = await prisma.movie.findFirst({ where: { tmdbId, demoSessionId } });
+
+  const data = {
+    tmdbId,
+    title,
+    posterPath: posterPath ?? null,
+    overview: overview ?? null,
+    director: director ?? null,
+    releaseYear: releaseYear ?? null,
+    rating: rating != null ? Number(rating) : null,
+    watchedAt: watchedAt ? new Date(watchedAt) : null,
+    watchedPrecision: precision,
+    demoSessionId,
+  };
+
+  const movie = existing
+    ? await prisma.movie.update({
+        where: { id: existing.id },
+        data: {
+          rating: data.rating,
+          watchedAt: data.watchedAt ?? undefined,
+          watchedPrecision: precision,
+        },
+      })
+    : await prisma.movie.create({ data });
+
   revalidatePath("/cinema");
   revalidatePath("/");
   return NextResponse.json(movie);
@@ -50,11 +72,28 @@ export async function POST(req: NextRequest) {
 
 /** Met à jour un film (rating, owned, watchedAt). */
 export async function PUT(req: NextRequest) {
+  const gate = await ownerGateResponse();
+  if (gate) return gate;
   const body = await req.json();
   const { tmdbId, rating, owned, ownedFormat, watchedAt, watchedPrecision } = body;
 
   if (!tmdbId) {
     return NextResponse.json({ error: "tmdbId required" }, { status: 400 });
+  }
+
+  const filter = await demoFilter();
+  const existing = await prisma.movie.findFirst({ where: { tmdbId, ...filter } });
+  if (!existing) {
+    return NextResponse.json({ error: "Movie not found" }, { status: 404 });
+  }
+
+  try {
+    await assertDemoOwnership(existing.demoSessionId, "film");
+  } catch (e) {
+    if (e instanceof DemoForbiddenError) {
+      return NextResponse.json({ error: e.message }, { status: 403 });
+    }
+    throw e;
   }
 
   const data: Record<string, unknown> = {};
@@ -64,18 +103,36 @@ export async function PUT(req: NextRequest) {
   if (watchedAt !== undefined) data.watchedAt = watchedAt ? new Date(watchedAt) : null;
   if (watchedPrecision !== undefined) data.watchedPrecision = watchedPrecision === "year" ? "year" : "day";
 
-  const movie = await prisma.movie.update({ where: { tmdbId }, data });
+  const movie = await prisma.movie.update({ where: { id: existing.id }, data });
   revalidatePath("/cinema");
   return NextResponse.json(movie);
 }
 
 /** Supprime un film de la collection. */
 export async function DELETE(req: NextRequest) {
+  const gate = await ownerGateResponse();
+  if (gate) return gate;
   const { tmdbId } = await req.json();
   if (!tmdbId) {
     return NextResponse.json({ error: "tmdbId required" }, { status: 400 });
   }
-  await prisma.movie.delete({ where: { tmdbId } });
+
+  const filter = await demoFilter();
+  const existing = await prisma.movie.findFirst({ where: { tmdbId, ...filter } });
+  if (!existing) {
+    return NextResponse.json({ error: "Movie not found" }, { status: 404 });
+  }
+
+  try {
+    await assertDemoOwnership(existing.demoSessionId, "film");
+  } catch (e) {
+    if (e instanceof DemoForbiddenError) {
+      return NextResponse.json({ error: e.message }, { status: 403 });
+    }
+    throw e;
+  }
+
+  await prisma.movie.delete({ where: { id: existing.id } });
   revalidatePath("/cinema");
   revalidatePath("/");
   return NextResponse.json({ ok: true });

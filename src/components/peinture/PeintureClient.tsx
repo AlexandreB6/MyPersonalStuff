@@ -6,6 +6,8 @@ import { getColorFamily, COLOR_FAMILIES, type ColorFamily } from "@/data/paint-t
 import type { Paint } from "@/data/paint-types";
 import { PaintCard } from "./PaintCard";
 import Link from "next/link";
+import { apiFetch } from "@/lib/apiFetch";
+import { IS_DEMO } from "@/lib/clientDemo";
 
 /** Couleurs d'affichage pour les pastilles de filtre par famille de couleur */
 const FAMILY_DOT_COLORS: Record<string, string> = {
@@ -27,6 +29,7 @@ interface OwnedPaint {
   paintId: string;
   quantity: number;
   notes: string | null;
+  demoSessionId: string | null;
 }
 
 interface Props {
@@ -56,6 +59,12 @@ export function PeintureClient({
     for (const o of initialOwned) m.set(o.paintId, o.quantity);
     return m;
   });
+
+  // Peintures du catalogue partagé (mode démo) — non modifiables
+  const sharedPaintIds = useMemo(() => {
+    if (!IS_DEMO) return new Set<string>();
+    return new Set(initialOwned.filter((o) => o.demoSessionId == null).map((o) => o.paintId));
+  }, [initialOwned]);
 
   // États de filtre
   const [search, setSearch] = useState("");
@@ -101,10 +110,10 @@ export function PeintureClient({
   const totalOwned = owned.size;
   const totalPaints = paints.length;
 
-  /** Appel API générique pour persister les changements */
+  /** Appel API générique pour persister les changements (toast auto sur erreur). */
   const apiCall = useCallback(
     async (method: string, body: Record<string, unknown>) => {
-      await fetch("/api/paints", {
+      await apiFetch("/api/paints", {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...body, range: rangeSlug }),
@@ -272,6 +281,7 @@ export function PeintureClient({
             paint={paint}
             typeColors={typeColors}
             quantity={owned.get(paint.id) ?? 0}
+            isShared={sharedPaintIds.has(paint.id)}
             onAdd={() => addPaint(paint.id)}
             onRemove={() => removePaint(paint.id)}
             onIncrement={() =>

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { MangaClient } from "@/components/manga/MangaClient";
+import { demoFilter, dedupBySid } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,12 @@ async function checkJikanHealth(): Promise<boolean> {
  * et passe les données au client component MangaClient.
  */
 export default async function MangaPage() {
-  const [mangas, jikanUp] = await Promise.all([
-    prisma.manga.findMany({ orderBy: { title: "asc" } }),
+  const where = await demoFilter();
+  const [mangasRaw, jikanUp] = await Promise.all([
+    prisma.manga.findMany({ where, orderBy: { title: "asc" } }),
     checkJikanHealth(),
   ]);
+  const mangas = dedupBySid(mangasRaw, (m) => m.malId);
 
   const serialized = mangas.map((m) => ({
     ...m,

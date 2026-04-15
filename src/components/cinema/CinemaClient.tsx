@@ -11,6 +11,8 @@ import type { MovieCardData } from "./MovieCard";
 import { slugify } from "@/lib/tmdb";
 import type { TmdbGenre } from "@/lib/tmdb";
 import { CURRENT_YEAR, buildYearOptions } from "@/lib/utils";
+import { apiFetch } from "@/lib/apiFetch";
+import { isSharedItem } from "@/lib/clientDemo";
 
 interface WatchedMovie {
   tmdbId: number;
@@ -22,6 +24,7 @@ interface WatchedMovie {
   watchedAt: string | null;
   watchedPrecision: string;
   overview: string | null;
+  demoSessionId: string | null;
 }
 
 interface CinemaClientProps {
@@ -104,7 +107,7 @@ export function CinemaClient({
     if (activeTab !== "collection") return;
     const refresh = async () => {
       try {
-        const res = await fetch("/api/movies");
+        const res = await apiFetch("/api/movies");
         if (!res.ok) return;
         const movies = await res.json();
         const mapped: WatchedMovie[] = movies
@@ -119,6 +122,7 @@ export function CinemaClient({
             watchedAt: m.watchedAt as string | null,
             watchedPrecision: (m.watchedPrecision as string) ?? "day",
             overview: m.overview as string | null,
+            demoSessionId: (m.demoSessionId as string | null) ?? null,
           }));
         setWatchedMovies(mapped);
         setWatchedIds(new Set(mapped.map((m) => m.tmdbId)));
@@ -232,7 +236,7 @@ export function CinemaClient({
     const movie = movies.find((m) => m.tmdbId === tmdbId);
     if (!movie) return;
 
-    const res = await fetch("/api/movies", {
+    const res = await apiFetch("/api/movies", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -247,7 +251,6 @@ export function CinemaClient({
         watchedPrecision,
       }),
     });
-
     if (res.ok) {
       setWatchedIds((prev) => new Set([...prev, tmdbId]));
       const saved = await res.json();
@@ -262,6 +265,7 @@ export function CinemaClient({
           watchedAt: saved.watchedAt,
           watchedPrecision: saved.watchedPrecision,
           overview: saved.overview,
+          demoSessionId: saved.demoSessionId ?? null,
         },
         ...prev.filter((m) => m.tmdbId !== tmdbId),
       ]);
@@ -272,7 +276,7 @@ export function CinemaClient({
   const [movieToRemove, setMovieToRemove] = useState<WatchedMovie | null>(null);
 
   const handleRemoveWatched = async (tmdbId: number) => {
-    const res = await fetch("/api/movies", {
+    const res = await apiFetch("/api/movies", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tmdbId }),
@@ -290,7 +294,7 @@ export function CinemaClient({
 
   // Modifier un film vu (note / date de visionnage)
   const handleEditWatched = async (tmdbId: number, rating: number | null, watchedAt: string | null, watchedPrecision: "day" | "year" = "day") => {
-    const res = await fetch("/api/movies", {
+    const res = await apiFetch("/api/movies", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tmdbId, rating, watchedAt: watchedAt || null, watchedPrecision }),
@@ -621,19 +625,30 @@ export function CinemaClient({
                       </p>
                     )}
                     <div className="flex items-center gap-3 mt-1">
-                      <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditMovie(movie); }}
-                        className="text-xs text-muted-foreground hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1"
-                      >
-                        <Pencil className="w-3 h-3" aria-hidden="true" />
-                        Modifier
-                      </button>
-                      <button
-                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMovieToRemove(movie); }}
-                        className="text-xs text-red-400/70 hover:text-red-400 transition-colors cursor-pointer"
-                      >
-                        Retirer
-                      </button>
+                      {isSharedItem(movie) ? (
+                        <span
+                          className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20"
+                          title="Ce film fait partie du catalogue de démonstration — il est partagé avec tous les visiteurs et ne peut pas être modifié."
+                        >
+                          Catalogue partagé
+                        </span>
+                      ) : (
+                        <>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditMovie(movie); }}
+                            className="text-xs text-muted-foreground hover:text-white transition-colors cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Pencil className="w-3 h-3" aria-hidden="true" />
+                            Modifier
+                          </button>
+                          <button
+                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); setMovieToRemove(movie); }}
+                            className="text-xs text-red-400/70 hover:text-red-400 transition-colors cursor-pointer"
+                          >
+                            Retirer
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 </Link>

@@ -2,6 +2,7 @@ import { discoverMovies, getMovieWithCredits, getDirector, getTopCast, formatRun
 import { prisma } from "@/lib/prisma";
 import { CinemaClient } from "@/components/cinema/CinemaClient";
 import type { MovieCardData } from "@/components/cinema/MovieCard";
+import { demoFilter, dedupBySid } from "@/lib/demo";
 
 export const dynamic = "force-dynamic";
 
@@ -10,12 +11,15 @@ export const dynamic = "force-dynamic";
  */
 export default async function CinemaPage() {
   // Chargement parallèle : genres, discover (sorties récentes), films vus
+  const where = await demoFilter();
   const [genreList, discoverResult, watchedMovies] = await Promise.all([
     getGenreList(),
     discoverMovies({ page: 1, sortBy: "primary_release_date.desc" }),
     prisma.movie.findMany({
+      where,
       orderBy: { createdAt: "desc" },
       select: {
+        id: true,
         tmdbId: true,
         title: true,
         posterPath: true,
@@ -25,12 +29,15 @@ export default async function CinemaPage() {
         watchedAt: true,
         watchedPrecision: true,
         overview: true,
+        demoSessionId: true,
       },
     }),
   ]);
+  // Dedup seed/visitor collisions before building the client payload.
+  const watchedMoviesDeduped = dedupBySid(watchedMovies, (m) => m.tmdbId ?? `movie-${m.id}`);
 
   // IDs TMDB des films déjà vus — pour afficher le badge "Vu" dans la grille
-  const watchedTmdbIds = watchedMovies
+  const watchedTmdbIds = watchedMoviesDeduped
     .filter((m) => m.tmdbId != null)
     .map((m) => m.tmdbId as number);
   const watchedSet = new Set(watchedTmdbIds);
@@ -68,7 +75,7 @@ export default async function CinemaPage() {
     });
 
   // Sérialiser les films vus pour passage au client (dates → ISO strings)
-  const serializedWatched = watchedMovies
+  const serializedWatched = watchedMoviesDeduped
     .filter((m) => m.tmdbId != null)
     .map((m) => ({
       tmdbId: m.tmdbId as number,
@@ -80,6 +87,7 @@ export default async function CinemaPage() {
       watchedAt: m.watchedAt?.toISOString() ?? null,
       watchedPrecision: m.watchedPrecision,
       overview: m.overview ?? null,
+      demoSessionId: m.demoSessionId,
     }));
 
   return (
