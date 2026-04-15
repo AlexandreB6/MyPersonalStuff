@@ -3,10 +3,10 @@
  * Efface le cookie `owner_session`.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { clearOwnerCookie } from "@/lib/owner";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   await clearOwnerCookie();
-  return NextResponse.json({ ok: true });
+  return NextResponse.redirect(new URL("/", req.url), { status: 303 });
 }

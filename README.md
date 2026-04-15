@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MyPersonalStuff
 
-## Getting Started
+> **[🚀 Essayer la démo en ligne](https://my-personal-stuff-demo.vercel.app/)**
 
-First, run the development server:
+Application web full-stack pour gérer mes collections personnelles : films vus, mangas possédés (avec scan ISBN) et peintures figurines (Citadel, Monument Hobbies). Conçue à l'origine comme un outil personnel, puis ouverte au public en mode démo bac-à-sable.
+
+## Démo publique
+
+Le lien ci-dessus pointe vers une instance de démonstration. Chaque visiteur reçoit automatiquement un **sandbox isolé** (cookie `demo_session`) et peut ajouter, modifier ou supprimer ses propres entrées sans affecter les autres utilisateurs. Un catalogue d'items partagés est pré-chargé pour donner un aperçu immédiat. Les sandbox sont purgés chaque jour par un cron Vercel.
+
+## Features
+
+- **Cinéma** — recherche et découverte TMDB, notation 0.5–5 étoiles, suivi des films vus avec date
+- **Manga** — collection MyAnimeList (API Jikan), suivi des volumes possédés, **scan de code-barres ISBN** (Quagga2 + Google Books + Jikan)
+- **Peinture** — inventaire multi-gammes (Citadel, Monument Hobbies) avec filtres par type, couleur, métallique, stock
+- **Dashboard** — vue d'ensemble avec compteurs et derniers ajouts par espace
+- **Mode démo** — sandbox isolés per-user, cron de nettoyage, reset manuel
+- **Write-gate propriétaire** — version privée protégée par mot de passe stateless (sha256), reads publics
+
+## Stack technique
+
+- **Next.js 16** (App Router, Server Components, TypeScript)
+- **Tailwind CSS v4** + **shadcn/ui v4** (primitives `@base-ui/react`)
+- **Prisma 5** + **PostgreSQL** (Neon — branches séparées pour privé et démo)
+- **TMDB** API pour les films, **Jikan** (MyAnimeList) pour les mangas
+- **Google Books** pour le lookup ISBN
+- **Quagga2** pour le scan de code-barres dans le navigateur
+- **sonner** pour les toasts d'erreur
+- Déployé sur **Vercel** (2 projets : privé + démo), avec cron quotidien
+
+## Architecture
+
+Chaque espace suit le même pattern : un **Server Component** (page) récupère les données via Prisma ou une API externe, puis passe les données sérialisées à un **Client Component** (`*Client.tsx`) qui gère l'état et les interactions. Les mutations passent par des routes API Next.js avec mises à jour optimistes côté client.
+
+Le mode démo repose sur un **middleware proxy** (`src/proxy.ts`) qui injecte un cookie UUID à la première visite, et une lib `src/lib/demo.ts` qui scope tous les reads et writes à la sandbox du visiteur. Les lignes seed (`demoSessionId = NULL`) sont visibles par tous mais non-modifiables — le serveur renvoie un 403 explicite, le client affiche un badge "Catalogue partagé".
+
+## Développement local
 
 ```bash
+npm install
+cp .env.example .env.local   # éditer avec tes clés
+npx prisma migrate dev
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Variables d'environnement requises :
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+TMDB_API_KEY=...
+DATABASE_URL=postgres://...
+DIRECT_URL=postgres://...    # non-pooled, pour les migrations
+DEMO_MODE=false
+NEXT_PUBLIC_DEMO_MODE=false
+OWNER_PASSWORD=...           # optionnel — active le write-gate
+```
