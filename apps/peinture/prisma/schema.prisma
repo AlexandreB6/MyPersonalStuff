@@ -1,0 +1,32 @@
+// Schéma Prisma de l'app Peinture.
+// Une base dédiée (`peinture`) dans le projet Neon — voir README.
+// Le catalogue des peintures reste statique (src/data), la base ne stocke
+// que la possession.
+
+generator client {
+  provider = "prisma-client-js"
+  // Sortie dédiée : en monorepo, le client par défaut (node_modules/.prisma)
+  // est hoisté à la racine et les 3 apps s'écraseraient mutuellement.
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// Peinture possédée par l'utilisateur (multi-gamme)
+model OwnedPaint {
+  id            Int      @id @default(autoincrement())
+  paintId       String   /// Identifiant slug de la peinture (ex: "abaddon-black")
+  range         String   @default("citadel") /// Gamme de peinture ("citadel", "monument-hobbies")
+  quantity      Int      @default(1)
+  notes         String?
+  demoSessionId String?  /// Sandbox démo : NULL = seed partagé / prod privée
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([paintId, range, demoSessionId])
+  @@index([demoSessionId])
+}

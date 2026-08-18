@@ -1,55 +1,100 @@
 # MyPersonalStuff
 
-> **[🚀 Essayer la démo en ligne](https://my-personal-stuff-demo.vercel.app/)**
+Monorepo de trois applications indépendantes pour gérer mes collections personnelles.
+Chacune est une **PWA installable** sur téléphone, déployée séparément.
 
-Application web full-stack pour gérer mes collections personnelles : films vus, mangas possédés (avec scan ISBN) et peintures figurines (Citadel, Monument Hobbies). Conçue à l'origine comme un outil personnel, puis ouverte au public en mode démo bac-à-sable.
+| App | Dossier | Contenu | Port dev |
+|---|---|---|---|
+| 🎬 **Cinéma** | [`apps/cinema`](apps/cinema) | Films vus, notes 0.5–5 ★, découverte du catalogue TMDB | 3000 |
+| 📚 **Manga** | [`apps/manga`](apps/manga) | Collection MyAnimeList, suivi des volumes, scan ISBN | 3001 |
+| 🎨 **Peinture** | [`apps/peinture`](apps/peinture) | Inventaire multi-gammes (Citadel, Monument Hobbies) | 3002 |
 
-## Démo publique
+## Pourquoi trois apps
 
-Le lien ci-dessus pointe vers une instance de démonstration. Chaque visiteur reçoit automatiquement un **sandbox isolé** (cookie `demo_session`) et peut ajouter, modifier ou supprimer ses propres entrées sans affecter les autres utilisateurs. Un catalogue d'items partagés est pré-chargé pour donner un aperçu immédiat. Les sandbox sont purgés chaque jour par un cron Vercel.
+Le projet était à l'origine une seule application avec trois espaces et un dashboard
+commun. Les trois domaines n'ont aucune donnée en commun : les séparer donne trois
+icônes distinctes sur l'écran d'accueil du téléphone, trois cycles de déploiement et
+trois bases indépendantes. Le code réellement transverse (thème, write-gate,
+mode démo, coquille d'UI) vit dans `packages/`.
 
-## Features
+## Structure
 
-- **Cinéma** — recherche et découverte TMDB, notation 0.5–5 étoiles, suivi des films vus avec date
-- **Manga** — collection MyAnimeList (API Jikan), suivi des volumes possédés, **scan de code-barres ISBN** (Quagga2 + Google Books + Jikan)
-- **Peinture** — inventaire multi-gammes (Citadel, Monument Hobbies) avec filtres par type, couleur, métallique, stock
-- **Dashboard** — vue d'ensemble avec compteurs et derniers ajouts par espace
-- **Mode démo** — sandbox isolés per-user, cron de nettoyage, reset manuel
-- **Write-gate propriétaire** — version privée protégée par mot de passe stateless (sha256), reads publics
+```
+apps/
+  cinema/ manga/ peinture/     3 apps Next.js 16, une base Neon chacune
+packages/
+  core/                        demo mode, write-gate owner, apiFetch, utils
+  ui/                          thème Tailwind, AppShell, BottomNav, dialogs
+  tsconfig/                    tsconfig de base
+scripts/
+  generate-icons.mjs           icônes PWA des 3 apps
+```
 
-## Stack technique
+Les packages sont consommés en TypeScript brut : chaque app les déclare dans
+`transpilePackages` (voir `apps/*/next.config.ts`).
+
+## Développement
+
+```bash
+npm install                    # une seule fois, à la racine
+
+npm run dev:cinema             # http://localhost:3000
+npm run dev:manga              # http://localhost:3001
+npm run dev:peinture           # http://localhost:3002
+
+npm run build:all              # build les 3
+npm run typecheck              # tsc --noEmit sur les 3
+```
+
+Chaque app a son propre `.env.local` — partir de son `.env.local.example`.
+
+```bash
+cp apps/cinema/.env.local.example apps/cinema/.env.local
+```
+
+Prisma se pilote depuis le dossier de l'app :
+
+```bash
+cd apps/cinema
+npx prisma migrate dev --name <nom>
+npx prisma studio
+```
+
+> ⚠️ Le client Prisma est généré dans `apps/<app>/src/generated/prisma`, pas dans
+> `node_modules/.prisma`. En monorepo ce dernier est hoisté à la racine et les trois
+> apps s'écraseraient mutuellement.
+
+## Stack
 
 - **Next.js 16** (App Router, Server Components, TypeScript)
 - **Tailwind CSS v4** + **shadcn/ui v4** (primitives `@base-ui/react`)
-- **Prisma 5** + **PostgreSQL** (Neon — branches séparées pour privé et démo)
-- **TMDB** API pour les films, **Jikan** (MyAnimeList) pour les mangas
-- **Google Books** pour le lookup ISBN
+- **Prisma 5** + **PostgreSQL** (Neon — une base par app)
+- **TMDB** (films), **Jikan / MyAnimeList** (mangas), **Google Books** (lookup ISBN)
 - **Quagga2** pour le scan de code-barres dans le navigateur
 - **sonner** pour les toasts d'erreur
-- Déployé sur **Vercel** (2 projets : privé + démo), avec cron quotidien
+- Déployé sur **Vercel** — un projet par app, `Root Directory` = `apps/<app>`
 
-## Architecture
+## PWA
 
-Chaque espace suit le même pattern : un **Server Component** (page) récupère les données via Prisma ou une API externe, puis passe les données sérialisées à un **Client Component** (`*Client.tsx`) qui gère l'état et les interactions. Les mutations passent par des routes API Next.js avec mises à jour optimistes côté client.
+Chaque app fournit un `manifest.webmanifest` (via `src/app/manifest.ts`), ses icônes
+(`public/icon-*.png`, générées par `node scripts/generate-icons.mjs`) et un service
+worker minimal (`public/sw.js`) : réseau d'abord sur les pages avec repli sur
+`/offline`, cache d'abord sur `/_next/static`. Le service worker n'est enregistré
+qu'en production (`packages/ui/src/PwaRegister.tsx`).
 
-Le mode démo repose sur un **middleware proxy** (`src/proxy.ts`) qui injecte un cookie UUID à la première visite, et une lib `src/lib/demo.ts` qui scope tous les reads et writes à la sandbox du visiteur. Les lignes seed (`demoSessionId = NULL`) sont visibles par tous mais non-modifiables — le serveur renvoie un 403 explicite, le client affiche un badge "Catalogue partagé".
+## Mode démo
 
-## Développement local
+Chaque app peut tourner en deux exemplaires : le déploiement privé (`DEMO_MODE=false`)
+et un déploiement portfolio public (`DEMO_MODE=true`). En mode démo chaque visiteur
+reçoit un sandbox isolé via un cookie `demo_session` posé par `src/proxy.ts` ; les
+lectures voient le seed partagé (`demoSessionId IS NULL`) plus ses propres lignes, les
+écritures sont estampillées, et un cron Vercel quotidien purge les sandboxes de plus
+de 24 h. Toute la logique est dans `packages/core/src/demo.ts`.
 
-```bash
-npm install
-cp .env.example .env.local   # éditer avec tes clés
-npx prisma migrate dev
-npm run dev
-```
+## Write-gate propriétaire
 
-Variables d'environnement requises :
-
-```
-TMDB_API_KEY=...
-DATABASE_URL=postgres://...
-DIRECT_URL=postgres://...    # non-pooled, pour les migrations
-DEMO_MODE=false
-NEXT_PUBLIC_DEMO_MODE=false
-OWNER_PASSWORD=...           # optionnel — active le write-gate
-```
+En mode privé, si `OWNER_PASSWORD` est défini, les routes API mutantes exigent un
+cookie `owner_session` obtenu sur `/login`. Sans session, les lectures restent
+publiques et les écritures renvoient 401. Stateless : le cookie contient
+`sha256(OWNER_PASSWORD)`, changer le mot de passe invalide toutes les sessions.
+Voir `packages/core/src/owner.ts`.
