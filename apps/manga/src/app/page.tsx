@@ -4,11 +4,6 @@ import { demoFilter, dedupBySid } from "@repo/core/demo";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Manga — MyPersonalStuff",
-  description: "Collection personnelle de mangas",
-};
-
 /** Vérifie si l'API Jikan est accessible (timeout court). */
 async function checkJikanHealth(): Promise<boolean> {
   try {

@@ -5,11 +5,6 @@ import { demoFilter, dedupBySid } from "@repo/core/demo";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-  title: "Peinture — MyPersonalStuff",
-  description: "Inventaire de peintures miniatures",
-};
-
 /** Page hub Peinture — liste les gammes disponibles avec compteurs de possession. */
 export default async function PeinturePage() {
   const where = await demoFilter();

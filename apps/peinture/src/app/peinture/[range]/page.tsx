@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props) {
   const range = RANGE_MAP.get(rangeSlug);
   if (!range) return {};
   return {
-    title: `${range.name} — Peinture — MyPersonalStuff`,
+    title: `${range.name} — Peinture`,
     description: range.description,
   };
 }

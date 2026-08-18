@@ -65,7 +65,7 @@ export async function generateMetadata({ params }: Props) {
   try {
     const { manga } = await loadManga(malId);
     return {
-      title: `${manga.title} — Manga — MyPersonalStuff`,
+      title: `${manga.title} — Manga`,
       description: manga.synopsis?.slice(0, 160) ?? `Fiche manga : ${manga.title}`,
     };
   } catch {
