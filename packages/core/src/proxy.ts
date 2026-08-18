@@ -6,7 +6,7 @@
  *
  *   // apps/<app>/src/proxy.ts
  *   export const proxy = createDemoProxy();
- *   export const config = demoProxyConfig;
+ *   export const config = { matcher: […] };  // littéral statique exigé par Next
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -34,7 +34,3 @@ export function createDemoProxy() {
     return res;
   };
 }
-
-export const demoProxyConfig = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|icon-.*\.png|apple-touch-icon\.png).*)"],
-};

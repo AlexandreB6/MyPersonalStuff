@@ -30,8 +30,9 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files — seuls les .example sont versionnés
 .env*
+!.env*.example
 
 # database
 **/prisma/dev.db
