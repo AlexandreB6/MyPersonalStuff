@@ -38,12 +38,3 @@ export const CURRENT_YEAR = new Date().getFullYear();
 export function buildYearOptions(startYear: number): number[] {
   return Array.from({ length: CURRENT_YEAR - startYear + 1 }, (_, i) => CURRENT_YEAR - i);
 }
-
-/** Options de démographie manga — partagées entre les composants */
-export const DEMOGRAPHIC_OPTIONS = [
-  { value: "all", label: "Tous" },
-  { value: "Shounen", label: "Shonen" },
-  { value: "Shoujo", label: "Shojo" },
-  { value: "Seinen", label: "Seinen" },
-  { value: "Josei", label: "Josei" },
-] as const;

@@ -17,5 +17,11 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:karanbansal.in)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "github",
+    "context7",
+    "next-devtools",
+    "prisma"
+  ]
 }

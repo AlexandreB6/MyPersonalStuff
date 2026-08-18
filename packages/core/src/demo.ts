@@ -78,23 +78,22 @@ export class DemoForbiddenError extends Error {
   }
 }
 
-export type DemoEntityLabel = "film" | "manga" | "peinture";
-
-const SHARED_LABEL: Record<DemoEntityLabel, string> = {
-  film: "Ce film fait partie du catalogue partagé et ne peut pas être modifié.",
-  manga: "Ce manga fait partie du catalogue partagé et ne peut pas être modifié.",
-  peinture: "Cette peinture fait partie du catalogue partagé et ne peut pas être modifiée.",
-};
+/**
+ * Message par défaut quand la ligne visée appartient au catalogue partagé.
+ * Chaque app passe son propre libellé ("Ce film …", "Ce manga …").
+ */
+export const DEFAULT_SHARED_MESSAGE =
+  "Cet élément fait partie du catalogue partagé et ne peut pas être modifié.";
 
 export async function assertDemoOwnership(
   rowDemoSessionId: string | null | undefined,
-  entity: DemoEntityLabel = "film",
+  sharedMessage: string = DEFAULT_SHARED_MESSAGE,
 ): Promise<void> {
   if (!isDemoMode()) return;
   const sid = await getDemoSessionId();
   // Seed row (NULL) → friendly "shared catalog" wording.
   if (rowDemoSessionId == null) {
-    throw new DemoForbiddenError(SHARED_LABEL[entity]);
+    throw new DemoForbiddenError(sharedMessage);
   }
   // Another visitor's row → generic forbidden.
   if (rowDemoSessionId !== sid) {

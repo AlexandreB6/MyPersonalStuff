@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { Lock } from "lucide-react";
 
 /**
- * Minimal owner login page. Only relevant in private mode with
- * OWNER_PASSWORD set; otherwise the API rejects the POST with 404.
+ * Formulaire de connexion owner, commun aux 3 apps.
+ * N'a de sens qu'en mode privé avec OWNER_PASSWORD défini ; sinon l'API
+ * répond 404 et le message le dit.
  */
-export default function LoginPage() {
+export function LoginForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);

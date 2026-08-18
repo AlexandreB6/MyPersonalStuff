@@ -1,0 +1,23 @@
+{
+  "name": "@repo/core",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./apiFetch": "./src/apiFetch.ts",
+    "./authRoutes": "./src/authRoutes.ts",
+    "./clientDemo": "./src/clientDemo.ts",
+    "./demo": "./src/demo.ts",
+    "./owner": "./src/owner.ts",
+    "./proxy": "./src/proxy.ts",
+    "./utils": "./src/utils.ts"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.5.0"
+  },
+  "peerDependencies": {
+    "next": "^16.2.3",
+    "react": "^19.2.3"
+  }
+}
