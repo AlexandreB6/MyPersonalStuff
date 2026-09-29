@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { MovieCard, type MovieCardData } from "./MovieCard";
 import { Loader2 } from "lucide-react";
 
@@ -11,10 +12,34 @@ interface MovieGridProps {
   onMarkWatched?: (movie: MovieCardData) => void;
 }
 
+/** Marge avant le bas de la grille à laquelle la page suivante est demandée. */
+const PREFETCH_MARGIN = "1200px";
+
 /**
  * Grille de films — composant "dumb", reçoit les données et callbacks du parent.
+ * Scroll infini : une sentinelle en fin de grille déclenche `onLoadMore` dès
+ * qu'elle approche du viewport, pour que la suite soit prête avant d'y arriver.
  */
 export function MovieGrid({ movies, loading, hasMore, onLoadMore, onMarkWatched }: MovieGridProps) {
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const onLoadMoreRef = useRef(onLoadMore);
+  onLoadMoreRef.current = onLoadMore;
+
+  // Ré-observé après chaque chargement : si la sentinelle est encore dans la
+  // marge (grille trop courte pour remplir l'écran), l'observer se redéclenche.
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || loading || !hasMore) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) onLoadMoreRef.current?.();
+      },
+      { rootMargin: `0px 0px ${PREFETCH_MARGIN} 0px` }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loading, hasMore, movies.length]);
+
   return (
     <>
       <div
@@ -32,21 +57,8 @@ export function MovieGrid({ movies, loading, hasMore, onLoadMore, onMarkWatched 
       )}
 
       {hasMore && onLoadMore && (
-        <div className="flex justify-center pt-8 pb-4">
-          <button
-            onClick={onLoadMore}
-            disabled={loading}
-            className="inline-flex items-center gap-2 px-8 py-3 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white hover:border-white/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-                Chargement…
-              </>
-            ) : (
-              "Voir plus de films"
-            )}
-          </button>
+        <div ref={sentinelRef} className="flex justify-center py-8" aria-hidden="true">
+          {loading && <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />}
         </div>
       )}
 
