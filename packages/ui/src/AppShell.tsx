@@ -39,10 +39,10 @@ export async function AppShell({ appName, icon, navItems, children }: AppShellPr
         Aller au contenu principal
       </a>
 
-      {IS_DEMO && <DemoBanner />}
-
-      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
+      {/* pt-safe : passe sous l'encoche / Dynamic Island en PWA (status bar
+          black-translucent + viewportFit cover). Vaut 0 sans découpe. */}
+      <header className="glass sticky top-0 z-50 border-b border-white/10 pt-[env(safe-area-inset-top)]">
+        <div className="relative max-w-7xl mx-auto px-safe sm:[--gutter:1.5rem] py-3.5 flex items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             {icon}
             <span className="text-lg font-bold tracking-tight">{appName}</span>
@@ -92,10 +92,17 @@ export async function AppShell({ appName, icon, navItems, children }: AppShellPr
         </div>
       </header>
 
-      {/* pb-20 sur mobile : laisse la place à la BottomNav fixée */}
+      {/* Sous le header : au-dessus, il serait recouvert par l'encoche */}
+      {IS_DEMO && <DemoBanner />}
+
+      {/* Padding bas sur mobile : laisse la place à la BottomNav flottante */}
       <main
         id="main-content"
-        className={`max-w-7xl mx-auto px-4 sm:px-6 py-8 ${showBottomNav ? "pb-24 md:pb-8" : ""}`}
+        className={`max-w-7xl mx-auto px-safe sm:[--gutter:1.5rem] py-8 ${
+          showBottomNav
+            ? "pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-8"
+            : "pb-[calc(2rem+env(safe-area-inset-bottom))]"
+        }`}
       >
         {children}
       </main>
@@ -106,7 +113,16 @@ export async function AppShell({ appName, icon, navItems, children }: AppShellPr
         </Suspense>
       )}
 
-      <Toaster richColors position="bottom-right" theme="dark" />
+      <Toaster
+        richColors
+        position="bottom-right"
+        theme="dark"
+        mobileOffset={{
+          bottom: showBottomNav
+            ? "calc(env(safe-area-inset-bottom) + 5.5rem)"
+            : "calc(env(safe-area-inset-bottom) + 1rem)",
+        }}
+      />
       <PwaRegister />
     </>
   );
