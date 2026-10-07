@@ -139,3 +139,30 @@
     @apply font-sans;
   }
 }
+
+/* ── Safe areas (encoche, Dynamic Island, barre d'accueil) ──────────
+   env(safe-area-inset-*) vaut 0 sur les écrans sans découpe : ces
+   utilitaires se réduisent alors à la gouttière normale. Nécessite
+   `viewportFit: "cover"` dans le viewport de l'app. */
+@utility px-safe {
+  padding-left: max(var(--gutter, 1rem), env(safe-area-inset-left));
+  padding-right: max(var(--gutter, 1rem), env(safe-area-inset-right));
+}
+
+/* ── Glass — surface translucide façon « Liquid Glass » iOS ────────
+   Flou + saturation du contenu derrière, reflet en haut, liseré
+   lumineux. Repli opaque si backdrop-filter n'est pas supporté. */
+@utility glass {
+  background-color: oklch(0.17 0 0 / 0.55);
+  background-image: linear-gradient(180deg, oklch(1 0 0 / 0.08), oklch(1 0 0 / 0) 70%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow:
+    inset 0 1px 0 0 oklch(1 0 0 / 0.14),
+    inset 0 -1px 0 0 oklch(1 0 0 / 0.04),
+    0 12px 32px -12px oklch(0 0 0 / 0.6);
+
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+    background-color: oklch(0.17 0 0 / 0.94);
+  }
+}
