@@ -2,9 +2,3 @@
 
 /* Sources de cette app — le thème partagé déclare déjà les siennes. */
 @source "../";
-
-/* Teinte du halo d'ambiance (voir theme.css) */
-:root {
-  --ambient: oklch(0.75 0.16 75 / 0.3);
-  --ambient-soft: oklch(0.75 0.16 75 / 0.18);
-}
