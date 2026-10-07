@@ -35,7 +35,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
       className="md:hidden fixed inset-x-0 bottom-0 z-50 px-safe pb-[max(0.75rem,env(safe-area-inset-bottom))] pointer-events-none"
     >
       {/* Pilule flottante en verre, posée au-dessus de la barre d'accueil iOS */}
-      <ul className="glass pointer-events-auto mx-auto flex max-w-sm items-stretch gap-1 rounded-full border border-white/10 p-1.5">
+      <ul className="glass glass-rim relative pointer-events-auto mx-auto flex max-w-sm items-stretch gap-1 rounded-full p-1.5">
         {items.map((item) => {
           const active = isActive(item.href);
           return (
@@ -45,7 +45,7 @@ export function BottomNav({ items }: { items: NavItem[] }) {
                 aria-current={active ? "page" : undefined}
                 className={`flex flex-col items-center gap-0.5 rounded-full py-1.5 text-[11px] font-medium transition-all duration-300 ${
                   active
-                    ? "bg-white/12 text-foreground shadow-[inset_0_1px_0_0_rgb(255_255_255/0.15)]"
+                    ? "bg-white/15 text-foreground shadow-[inset_0_1px_0_0_rgb(255_255_255/0.25)]"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
