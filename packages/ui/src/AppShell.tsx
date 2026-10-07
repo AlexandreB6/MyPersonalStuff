@@ -41,8 +41,8 @@ export async function AppShell({ appName, icon, navItems, children }: AppShellPr
 
       {/* pt-safe : passe sous l'encoche / Dynamic Island en PWA (status bar
           black-translucent + viewportFit cover). Vaut 0 sans découpe. */}
-      <header className="glass sticky top-0 z-50 border-b border-white/10 pt-[env(safe-area-inset-top)]">
-        <div className="relative max-w-7xl mx-auto px-safe sm:[--gutter:1.5rem] py-3.5 flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl pt-[env(safe-area-inset-top)]">
+        <div className="relative max-w-7xl mx-auto px-safe sm:[--gutter:1.5rem] py-4 flex items-center justify-between gap-3">
           <Link href="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             {icon}
             <span className="text-lg font-bold tracking-tight">{appName}</span>
@@ -95,7 +95,7 @@ export async function AppShell({ appName, icon, navItems, children }: AppShellPr
       {/* Sous le header : au-dessus, il serait recouvert par l'encoche */}
       {IS_DEMO && <DemoBanner />}
 
-      {/* Padding bas sur mobile : laisse la place à la BottomNav flottante */}
+      {/* Padding bas sur mobile : laisse la place à la BottomNav fixée */}
       <main
         id="main-content"
         className={`max-w-7xl mx-auto px-safe sm:[--gutter:1.5rem] py-8 ${
@@ -119,7 +119,7 @@ export async function AppShell({ appName, icon, navItems, children }: AppShellPr
         theme="dark"
         mobileOffset={{
           bottom: showBottomNav
-            ? "calc(env(safe-area-inset-bottom) + 5.5rem)"
+            ? "calc(env(safe-area-inset-bottom) + 4.5rem)"
             : "calc(env(safe-area-inset-bottom) + 1rem)",
         }}
       />
